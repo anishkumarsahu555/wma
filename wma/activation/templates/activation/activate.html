@@ -1,0 +1,48 @@
+{% extends 'home/index.html' %}
+{% block title %}
+    <title>Activation Expires</title>
+{% endblock %}
+{% block body %}
+
+    <style>
+        body {
+            background-color: #DADADA;
+        }
+
+        .ui.grid {
+            display: flex;
+            justify-content: center;
+            padding: 150px;
+            padding-right: 380px;
+            padding-left: 380px;
+        }
+
+        .ui.form {
+            border-radius: 5px;
+            text-align: center;
+        }
+
+    </style>
+
+
+    <div class=" ui center aligned basic segment grid">
+        <div class="column">
+
+
+            <div class="ui message">
+                <div class="ui icon message">
+                    <i class="notched exclamation triangle red loading icon"></i>
+                    <div class="content">
+                        <div class="header ">
+                           <span class="ui red text"> Activation Expires!!</span>
+                        </div>
+                        <p>Please Contact Us for Further Details.</p>
+                    </div>
+                </div>
+               <strong>Contact us at</strong> <a href="https://zivainfotech.com/" target="_blank">Ziva Infotech</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+{% endblock %}
