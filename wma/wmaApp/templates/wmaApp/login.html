@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Ziva App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css">
+    <style>
+        body {
+            background: radial-gradient(circle at top left, #0f2027, #203a43, #2c5364);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background circles */
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            animation: move 15s infinite ease-in-out alternate;
+        }
+        .circle:nth-child(1) { width: 300px; height: 300px; top: -50px; left: -50px; }
+        .circle:nth-child(2) { width: 200px; height: 200px; bottom: -50px; right: 5px; animation-delay: 5s; }
+        .circle:nth-child(3) { width: 150px; height: 150px; top: 45%; left: 55%; animation-delay: 2s; }
+
+        @keyframes move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(30px, -30px); }
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            z-index: 2;
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .ui.header {
+            color: #fff !important;
+            text-align: center;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        label {
+            color: #ccc !important;
+        }
+
+        /* Futuristic input style */
+        .ui.input input {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: none !important;
+            color: white !important;
+        }
+
+        /* Neon glow button */
+        .ui.primary.button {
+            background: linear-gradient(90deg, #00f5d4, #00bbf9) !important;
+            color: black !important;
+            font-weight: bold;
+            text-shadow: none;
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
+            transition: all 0.3s ease-in-out;
+        }
+        .ui.primary.button:hover {
+            box-shadow: 0 0 25px rgba(0,255,255,0.9);
+            transform: translateY(-2px);
+        }
+
+        /* Wave container */
+        .wave-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            line-height: 0;
+            z-index: 1;
+        }
+        .wave-container svg {
+            position: relative;
+            display: block;
+            width: calc(150% + 1.3px);
+            height: 150px;
+            animation: waveMove 8s ease-in-out infinite alternate;
+        }
+        @keyframes waveMove {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-25%); }
+        }
+
+        /* Mobile tweaks */
+        @media (max-width: 480px) {
+            .glass-card {
+                margin: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Animated circles -->
+<div class="circle"></div>
+<div class="circle"></div>
+<div class="circle"></div>
+
+<!-- Glass Login Card -->
+<div class="glass-card">
+    <h2 class="ui header">
+        <i class="lock icon"></i> Welcome Back
+    </h2>
+    <form class="ui form" method="POST">
+        {% csrf_token %}
+        <div class="field">
+            <label>Email</label>
+            <div class="ui left icon input">
+                <input type="email" name="email" placeholder="Enter email" required>
+                <i class="user icon"></i>
+            </div>
+        </div>
+        <div class="field">
+            <label>Password</label>
+            <div class="ui left icon input">
+                <input type="password" name="password" placeholder="Enter password" required>
+                <i class="lock icon"></i>
+            </div>
+        </div>
+        <button type="submit" class="ui fluid large primary button">Login</button>
+    </form>
+
+    <div style="text-align:center; margin-top: 1rem; color: #aaa;">
+        <a href="#" style="color:#00f5d4;">Forgot Password?</a> |
+        <a href="#" style="color:#00bbf9;">Sign Up</a>
+    </div>
+</div>
+
+<!-- Wave Animation -->
+<div class="wave-container">
+    <svg viewBox="0 0 1200 200" preserveAspectRatio="none">
+        <path d="M0,120 C300,200 900,0 1200,100 L1200,200 L0,200 Z" fill="rgba(255,255,255,0.05)"></path>
+    </svg>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.js"></script>
+</body>
+</html>

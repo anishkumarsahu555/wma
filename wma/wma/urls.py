@@ -16,9 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('wmaApp.urls',namespace='wmaApp')),
+    path('', include('wmaApp.urls', namespace='wmaApp')),
+    path('api/', include('wmaApp.api.urls', namespace='wma_api')),
     path('', include('pwa.urls')),  # You MUST use an empty string as the URL prefix
 ]
+
+# This is only for development. In production, serve media files using your web server (Nginx/Apache)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
