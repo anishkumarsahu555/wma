@@ -104,9 +104,9 @@ class PurchaseAdmin(admin.ModelAdmin):
 
 @admin.register(Customer)
 class CustomerAdmin(ImagePreviewMixin, ActiveDeletedMixin, admin.ModelAdmin):
-    list_display = ('image_preview', 'customerId', 'name', 'phone', 'email', 'location', 'isDeleted')
+    list_display = ('image_preview', 'customerId', 'name', 'phone', 'email', 'locationID', 'isDeleted')
     search_fields = ('customerId', 'name', 'phone', 'email')
-    list_filter = ('isDeleted', 'location')
+    list_filter = ('isDeleted', 'locationID')
     readonly_fields = ('image_preview',)
 
 

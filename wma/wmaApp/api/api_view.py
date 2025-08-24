@@ -14,6 +14,7 @@ from utils.get_owner_detail import get_owner_id
 from utils.json_validator import validate_input
 from wmaApp.models import *
 from utils.logger import logger
+
 # ---------------------------- staff user api ---------------------------
 @csrf_exempt
 @require_http_methods(['POST'])
@@ -244,12 +245,6 @@ def delete_staff(request):
         logger.error(f"Error while deleting staff user: {e}")
         return ErrorResponse(str(e), status_code=500).to_json_response()
 
-@csrf_exempt
-@require_http_methods(["POST"])
-@validate_input(['name'])
-def add_customer_api(request):
-    logger.info("add_customer_api")
-    return SuccessResponse("success").to_json_response()
 
 # ---------------------------- Location api ---------------------------
 @csrf_exempt
@@ -576,3 +571,198 @@ def update_expense_group_api(request):
     except Exception as e:
         logger.error(f"Error while updating expense group: {str(e)}")
         return ErrorResponse("Unable to update expense group. Please try again", status_code=500).to_json_response()
+
+# ---------------------------- Customer user api ---------------------------
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['name','profile_pic','email','location','address','phone' ])
+@transaction.atomic
+def add_customer_api(request):
+    data = request.POST.dict()
+    try:
+        profile_pic = request.FILES.get('profile_pic')
+        try:
+            location = Location.objects.get(id=data['location'], isDeleted=False, ownerID_id=get_owner_id(request))
+        except:
+            logger.error(f"Location not found")
+            return ErrorResponse("Location not found", status_code=404).to_json_response()
+
+        obj = Customer(
+            name=data['name'],
+            email=data.get('email', ''),
+            phone=data['phone'],
+            locationID=location,  # Assign the UserGroup instance
+            profile_pic=profile_pic,
+            address=data.get('address', ''),
+            addedDate=datetime.today().now(),
+            ownerID_id=get_owner_id(request),
+        )
+        username = 'CUS' + get_random_string(length=8, allowed_chars='1234567890')
+        password = get_random_string(length=8, allowed_chars='1234567890')
+        while User.objects.select_related().filter(username__exact=username).count() > 0:
+            username = 'CUS' + get_random_string(length=8, allowed_chars='1234567890')
+        else:
+            new_user = User()
+            new_user.username = username
+            new_user.set_password(password)
+            new_user.save()
+            obj.username = username
+            obj.userID = new_user
+            obj.save()
+            customer_count = Customer.objects.select_related().filter(ownerID_id=get_owner_id(request)).count()
+            obj.customerId = 'CID' + str(customer_count).zfill(8)
+            obj.save()
+            # Add user to group
+            group, created = Group.objects.get_or_create(name='Customer')
+            group.user_set.add(new_user)
+            group.save()
+        logger.info("Customer user created successfully")
+        return SuccessResponse("Customer user created successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while creating Customer user: {e}")
+        return ErrorResponse("Unable to add new Customer. Please try again").to_json_response()
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['id','name','email','location','address','phone' ])
+@transaction.atomic
+def update_customer_api(request):
+    data = request.POST.dict()
+    try:
+        # Get the Location instance
+        try:
+            loc = Location.objects.get(id=data['location'], isDeleted=False, ownerID_id=get_owner_id(request))
+        except Location.DoesNotExist:
+            logger.error(f"Location '{data['location']}' does not exist")
+            return ErrorResponse(f"Location does not exist").to_json_response()
+        try:
+            obj = Customer.objects.get(pk=data['id'], isDeleted=False, ownerID_id=get_owner_id(request))
+
+            obj.name = data['name']
+            obj.email = data.get('email', '')
+            obj.locationID = loc
+            obj.address = data.get('address', '')
+            obj.phone = data['phone']
+            obj.save()
+
+            logger.info("Customer user updated successfully")
+            return SuccessResponse("Customer user updated successfully").to_json_response()
+        except Customer.DoesNotExist:
+            logger.error(f"Customer user with ID '{data['id']}' not found")
+            return ErrorResponse("Customer user does not exist").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while updating Customer user: {e}")
+        return ErrorResponse("Unable to update Customer. Please try again").to_json_response()
+
+
+
+class CustomerListJson(BaseDatatableView):
+    order_columns = ['profile_pic', 'customerId','name',  'locationID', 'phone', 'address', 'dateCreated']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        return Customer.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(self.request))
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search) | Q(customerId__icontains=search)
+                | Q(locationID__icontains=search) | Q(phone__icontains=search)
+                | Q(address__icontains=search)
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            images = '<img class="ui avatar image" src="{}">'.format(item.profile_pic.thumb.url)
+            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </button>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+            json_data.append([
+                images,  # escape HTML for security reasons
+                escape(item.customerId),
+                escape(item.name),
+                escape(item.locationID.name),
+                escape(item.phone),
+                escape(item.address),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+            ])
+        return json_data
+
+
+@require_http_methods(["GET"])
+@validate_input(['id'])
+def get_customer_detail(request):
+    try:
+        obj_id = request.GET.get('id')
+        # Get single customer user
+        try:
+            obj = Customer.objects.get(id=obj_id, isDeleted=False)
+            data = {
+                'id': obj.id,
+                'name': obj.name,
+                'email': obj.email,
+                'location': obj.locationID.id,
+                'phone': obj.phone,
+                'address': obj.address,
+                'profile_pic': obj.profile_pic.url,
+
+
+            }
+            logger.info("Customer user fetched successfully")
+            return SuccessResponse("Customer user fetched successfully", data=data).to_json_response()
+        except Customer.DoesNotExist:
+            logger.error(f"Customer user with ID '{obj_id}' not found")
+            return ErrorResponse("Customer user not found", status_code=404).to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while fetching Customer user: {e}")
+        return ErrorResponse( 'Unable to fetch Customer user. Please try again', status_code=500).to_json_response()
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_customer(request):
+
+    id = request.POST.get("id")
+    try:
+        try:
+            obj = Customer.objects.get(id=id, isDeleted=False)
+        except Customer.DoesNotExist:
+            logger.error(f"Customer user not found")
+            return ErrorResponse("Customer user not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.isActive = False
+        obj.save()
+
+        # Also deactivate the associated user
+        if obj.userID:
+            obj.userID.is_active = False
+            obj.userID.save()
+        logger.info("Customer user deleted successfully")
+        return SuccessResponse("Customer user deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting Customer user: {e}")
+        return ErrorResponse(f"Unable to delete Customer user. Please try again", status_code=500).to_json_response()
+

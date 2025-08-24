@@ -86,10 +86,10 @@ class Location(models.Model):
 
 class Customer(models.Model):
     ownerID = models.ForeignKey(Owner, on_delete=models.CASCADE,null=True, blank=True)
-    location = models.ForeignKey(Location, on_delete=models.CASCADE,null=True, blank=True)
+    locationID = models.ForeignKey(Location, on_delete=models.CASCADE,null=True, blank=True)
     profile_pic = StdImageField(upload_to='customer_pics', variations={'thumb': (128, 128)}, null=True, blank=True)
     customerId = models.CharField(max_length=100, blank=True, null=True)
-    user_id = models.OneToOneField(User, on_delete=models.CASCADE,null=True, blank=True)
+    userID = models.OneToOneField(User, on_delete=models.CASCADE,null=True, blank=True)
     username = models.CharField(max_length=100, blank=True, null=True)
     password = models.CharField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -97,6 +97,7 @@ class Customer(models.Model):
     email = models.EmailField(max_length=100, blank=True, null=True)
     address = models.CharField(max_length=100, blank=True, null=True)
     addedByID = models.ForeignKey(StaffUser, on_delete=models.CASCADE, null=True, blank=True)
+    isActive = models.BooleanField(default=True)
     addedDate = models.DateField(blank=True, null=True)
     isDeleted = models.BooleanField(default=False)
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)

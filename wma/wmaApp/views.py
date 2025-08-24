@@ -1,4 +1,6 @@
 from django.shortcuts import render
+
+from utils.get_owner_detail import get_owner_id
 from utils.logger import logger
 from .models import *
 # Create your views here.
@@ -21,7 +23,13 @@ def manage_staff(request):
 
 
 def manage_customer(request):
-    return render(request, 'wmaApp/customer/manage_customer.html')
+    logger.info("Manage customer called")
+    location = Location.objects.filter(isDeleted=False,  ownerID_id=get_owner_id(request))
+
+    context = {
+        'locations': location
+    }
+    return render(request, 'wmaApp/customer/manage_customer.html', context)
 
 
 def manage_product(request):

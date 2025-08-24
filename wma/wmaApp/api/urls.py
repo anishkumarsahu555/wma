@@ -25,5 +25,11 @@ urlpatterns = [
     path('get_expense_group_detail/', get_expense_group_detail, name='get_expense_group_detail'),
     path('update_expense_group_api/', update_expense_group_api, name='update_expense_group_api'),
 
-    path('create_customer/', add_customer_api, name='add_customer_api')
+    # customer api urls
+    path('add_customer_api/', add_customer_api, name='add_customer_api'),
+    path('CustomerListJson/', CustomerListJson.as_view(), name='CustomerListJson'),
+    path('delete_customer/', delete_customer, name='delete_customer'),
+    path('get_customer_detail/', get_customer_detail, name='get_customer_detail'),
+    path('update_customer_api/', update_customer_api, name='update_customer_api'),
+
 ]

@@ -1,7 +1,7 @@
 {% extends "wmaApp/baseIndex.html" %}
 {% load static %}
 {% block title %}
-<title>Manage Staff</title>
+<title>Manage Customer</title>
 {% endblock %}
 {% block css %}
 {% endblock %}
@@ -101,12 +101,12 @@
     <div class="sixteen wide column">
         <div class="ui  pointing secondary menu">
             <div style="cursor: pointer;" class="item active" data-tab="user"
-            >Staff Users List
+            >Customer Users List
             </div>
             <div style=" position: absolute;right: 1.5rem;top: 18px;">
                 <button class="ui green mini plus button right" onclick="showUserModal()">
                     <i class="plus square outline icon"></i>
-                    Add User
+                    Add Customer User
                 </button>
             </div>
         </div>
@@ -120,13 +120,11 @@
                         <thead>
                         <tr>
                             <th>Photo</th>
+                            <th>CustomerID</th>
                             <th>Name</th>
-                            <th>Username</th>
-                            <th>Password</th>
-                            <th>Group</th>
+                            <th>Location</th>
                             <th>PhoneNo.</th>
                             <th>Address</th>
-                            <th>IsActive?</th>
                             <th>Added On</th>
                             <th>Actions</th>
                         </tr>
@@ -139,7 +137,7 @@
                 <div class="ui modal" id="myModalUser">
                     <i class="close icon"></i>
                     <div class="header">
-                        Add Staff
+                        Add Customer User
                     </div>
                     <div class="content">
 
@@ -205,54 +203,19 @@
 
                                 </div>
                             </div>
-                            <div class="two fields">
-                                <div class="field required">
-                                    <label>Group</label>
+                            <div class="one fields">
+                                <div class="sixteen wide field required">
+                                    <label>Location/Locality</label>
                                     <select class="ui fluid dropdown" id="UserGroup">
-                                        <option value="" hidden>Group</option>
-                                        {% for group in groups %}
-                                        <option value="{{ group.name }}">{{ group.name|capfirst }}</option>
+                                        <option value="" hidden>Location/Locality</option>
+                                        {% for loc in locations %}
+                                        <option value="{{ loc.id }}">{{ loc.name|capfirst }}</option>
                                         {% endfor %}
 
 
                                     </select>
                                 </div>
-                                {% comment %}  <div class="field required">
-                                <label>Party Group</label>
-                                <select class="ui fluid clearable search dropdown" id="PartyGroup">
-                                    <option value="" hidden>Party Group</option>
-                                    {% for group in groups %}
-                                    <option value="{{ group.id }}">{{ group.name|capfirst }}</option>
-                                    {% endfor %}
-
-
-                                </select>
-                            </div>{% endcomment %}
-
-                                <div class="field required">
-                                    <label>Is-Active</label>
-                                    <select class="ui fluid dropdown" id="UserStatus">
-                                        <option value="" hidden>Status</option>
-                                        <option value="Active" selected>Active</option>
-                                        <option value="In-Active">In-Active</option>
-
-                                    </select>
-                                </div>
                             </div>
-                            <div class="two fields">
-                                <div class="field required">
-                                    <label>Password</label>
-                                    <input type="password" name="Password" id="UserPwd" placeholder="Password">
-                                </div>
-                                <div class="field required">
-                                    <label>Confirm Password</label>
-                                    <input type="password" name="Password" id="ConfirmPwd"
-                                           placeholder="Confirm Password">
-                                </div>
-
-                            </div>
-
-
                         </form>
 
                         <div class="actions" style="padding-top: 20px; padding-bottom: 20px ;float: right">
@@ -273,10 +236,10 @@
             <div class="ui basic modal custom" id="deleteUser">
                 <div class="ui icon header">
                     <i class="archive icon"></i>
-                    User Details will be Deleted
+                    Customer Details will be Deleted
                 </div>
                 <div class="content">
-                    <p style="text-align: center">The User will be deleted, are you sure to delete this User?</p>
+                    <p style="text-align: center">The Customer will be deleted, are you sure to delete this Customer?</p>
                 </div>
                 <div class="actions">
                     <div class="ui red basic cancel inverted button">
@@ -294,7 +257,7 @@
             <div class="ui modal" id="userModal">
                 <i class="close icon"></i>
                 <div class="header">
-                    Edit Staff Details
+                    Edit Customer Details
                 </div>
                 <div class="content">
 
@@ -359,49 +322,17 @@
 
                             </div>
                         </div>
-                        <div class="two fields">
-                            <div class="field required">
+                        <div class="one fields">
+                            <div class="sixteen wide field required">
                                 <label>Group</label>
                                 <select class="ui fluid dropdown" id="UserGroupEdit">
                                     <option value="" hidden>Group</option>
-                                    {% for group in groups %}
-                                    <option value="{{ group.name }}">{{ group.name|capfirst }}</option>
+                                    {% for loc in locations %}
+                                    <option value="{{ loc.id }}">{{ loc.name|capfirst }}</option>
                                     {% endfor %}
 
 
                                 </select>
-                            </div>
-                            {% comment %} <div class="field required">
-                            <label>Party Group</label>
-                            <select class="ui fluid dropdown" id="PartyGroupEdit">
-                                <option value="" hidden>Party Group</option>
-                                {% for group in party_groups %}
-                                <option value="{{ group.id }}">{{ group.name|capfirst }}</option>
-                                {% endfor %}
-
-
-                            </select>
-                        </div>{% endcomment %}
-
-                            <div class="field required">
-                                <label>Is-Active</label>
-                                <select class="ui fluid dropdown" id="UserStatusEdit">
-                                    <option value="" hidden>Status</option>
-                                    <option value="Active" selected>Active</option>
-                                    <option value="In-Active">In-Active</option>
-
-                                </select>
-                            </div>
-                        </div>
-                        <div class="two fields">
-                            <div class="field required">
-                                <label>Password</label>
-                                <input type="password" name="Password" id="UserPwdEdit" placeholder="Password">
-                            </div>
-                            <div class="field required">
-                                <label>Confirm Password</label>
-                                <input type="password" name="Password" id="ConfirmPwdEdit"
-                                       placeholder="Confirm Password">
                             </div>
 
                         </div>
@@ -485,22 +416,18 @@
         var UserEmail = $('#UserEmail').val();
         var UserAddress = $('#UserAddress').val();
         var UserGroup = $('#UserGroup').val();
-        var UserStatus = $('#UserStatus').val();
-        var UserPwd = $('#UserPwd').val();
-        var ConfirmPwd = $('#ConfirmPwd').val();
-
 
         if (CompanyUserName === '' || UserPhoneNo === '' || imageUpload === undefined ||
-            UserAddress === '' || UserPwd === '' || ConfirmPwd === '' || UserGroup === '' || UserStatus === '') {
+            UserAddress === '' || UserGroup === '') {
             $('body')
                 .toast({
                     class: 'orange',
-                    message: 'User Name, Phone Number, Photo, Address ... are required !. Also ensure that password is matched'
+                    message: 'User Name, Phone Number, Photo, Address ... are required !. '
                 })
             ;
             hideLoading();
-        } else {
-
+            return false;
+        }
             var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
 
             data = new FormData();
@@ -509,28 +436,15 @@
             data.append('phone', UserPhoneNo);
             data.append('email', UserEmail);
             data.append('address', UserAddress);
-            data.append('group', UserGroup);
-            data.append('is_active', UserStatus);
-            data.append('password', UserPwd);
+            data.append('location', UserGroup);
 
 
             data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
 
 
-            if (UserPwd !== ConfirmPwd) {
-                $('body')
-                    .toast({
-                        class: 'orange',
-                        message: 'Password not matched!'
-                    })
-                ;
-                hideLoading();
-            } else {
-
-
                 $.ajax({
                     type: 'post',
-                    url: "{% url 'wma_api:add_staff_api' %}",
+                    url: "{% url 'wma_api:add_customer_api' %}",
                     data: data,
                     contentType: false,
                     cache: false,
@@ -574,9 +488,6 @@
                         hideLoading();
                     }
                 });
-            }
-
-        }
 
     }
 
@@ -594,29 +505,27 @@
         buttons: [{
             extend: 'excel',
             exportOptions: {
-                columns: [1, 2, 3, 4, 5, 6, 7, 8]
+                columns: [1, 2, 3, 4, 5, 6, 7]
             }
         }
 
         ],
         "columnDefs": [
             {"name": "photo", "targets": 0, "orderable": false},
-            {"name": "name", "targets": 1, "orderable": true},
-            {"name": "username", "targets": 2, "orderable": true},
-            {"name": "userPassword", "targets": 3, "orderable": true},
-            {"name": "group", "targets": 4, "orderable": true},
-            {"name": "phone", "targets": 5, "orderable": true},
-            {"name": "address", "targets": 6, "orderable": true},
-            {"name": "isActive", "targets": 7, "orderable": true},
-            {"name": "datetime", "targets": 8, "orderable": true},
-            {"name": "action", "targets": 9, "orderable": false}
+            {"name": "customerId", "targets": 1, "orderable": true},
+            {"name": "name", "targets": 2, "orderable": true},
+            {"name": "locationID", "targets": 3, "orderable": true},
+            {"name": "phone", "targets": 4, "orderable": true},
+            {"name": "address", "targets": 5, "orderable": true},
+            {"name": "datetime", "targets": 6, "orderable": true},
+            {"name": "action", "targets": 7, "orderable": false}
         ],
-        aaSorting: [[8, 'desc']],
+        aaSorting: [[6, 'desc']],
         "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         "pageLength": 10,
         "processing": true,
         "serverSide": true,
-        "ajax": "{% url 'wma_api:StaffUserListJson' %}"
+        "ajax": "{% url 'wma_api:CustomerListJson' %}"
     });
 
 
@@ -633,7 +542,7 @@
         formdata.append('id', id);
 
         $.ajax({
-            url: "{% url 'wma_api:delete_staff' %}",
+            url: "{% url 'wma_api:delete_customer' %}",
             type: "post",
             data: formdata,
             contentType: false,
@@ -683,7 +592,7 @@
         debugger;
         $.ajax({
             type: 'get',
-            url: "{% url 'wma_api:get_staff_detail' %}",
+            url: "{% url 'wma_api:get_customer_detail' %}",
             data: { id: id },
             success: function (response) {
 
@@ -693,11 +602,8 @@
                 $('#UserPhoneNoEdit').val(response.data['phone']);
                 $('#UserEmailEdit').val(response.data['email']);
                 $('#UserAddressEdit').val(response.data['address']);
-                $('#UserGroupEdit').val(response.data['group']).change();
-                $('#UserStatusEdit').val(response.data['isActive']).change();
+                $('#UserGroupEdit').val(response.data['location']).change();
                 $('#cImgEdit').css('background-image', 'url(' + response.data['profile_pic'] + ')');
-                $('#UserPwdEdit').val(response.data['password']);
-                $('#ConfirmPwdEdit').val(response.data['password']);
 
 
             },
@@ -719,22 +625,21 @@
         var UserPhoneNo = $('#UserPhoneNoEdit').val();
         var UserEmail = $('#UserEmailEdit').val();
         var UserAddress = $('#UserAddressEdit').val();
-        var UserGroup = $('#UserGroupEdit').val();
-        var UserStatus = $('#UserStatusEdit').val();
-        var UserPwd = $('#UserPwdEdit').val();
-        var ConfirmPwd = $('#ConfirmPwdEdit').val();
+        var location = $('#UserGroupEdit').val();
+
 
 
         if (CompanyUserName === '' || UserPhoneNo === '' ||
-            UserAddress === '' || UserPwd === '' || ConfirmPwd === '' || UserGroup === '' || UserStatus === '') {
+            UserAddress === '' || location === '') {
             $('body')
                 .toast({
                     class: 'orange',
-                    message: 'User Name, Phone Number, Photo, Address ... are required !. Also ensure that password is matched'
+                    message: 'User Name, Phone Number, Address ... are required !.'
                 })
             ;
             hideLoading();
-        } else {
+            return false;
+        }
 
             var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
 
@@ -744,26 +649,13 @@
             data.append('phone', UserPhoneNo);
             data.append('email', UserEmail);
             data.append('address', UserAddress);
-            data.append('group', UserGroup);
-            data.append('is_active', UserStatus);
-            data.append('password', UserPwd);
+            data.append('location', location);
             data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
-
-
-            if (UserPwd !== ConfirmPwd) {
-                $('body')
-                    .toast({
-                        class: 'orange',
-                        message: 'Password not matched!'
-                    })
-                ;
-                hideLoading();
-            } else {
 
 
                 $.ajax({
                     type: 'post',
-                    url: "{% url 'wma_api:update_staff_api' %}",
+                    url: "{% url 'wma_api:update_customer_api' %}",
                     data: data,
                     contentType: false,
                     cache: false,
@@ -807,9 +699,6 @@
                         hideLoading();
                     }
                 });
-            }
-
-        }
 
     }
 
