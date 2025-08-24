@@ -18,5 +18,12 @@ urlpatterns = [
     path('get_location_detail/', get_location_detail, name='get_location_detail'),
     path('update_location_api/', update_location_api, name='update_location_api'),
 
+    # expense group api urls
+    path('add_expense_group_api/', add_expense_group_api, name='add_expense_group_api'),
+    path('expense_group_list/', ExpenseGroupListJson.as_view(), name='ExpenseGroupListJson'),
+    path('delete_expense_group_api/', delete_expense_group_api, name='delete_expense_group_api'),
+    path('get_expense_group_detail/', get_expense_group_detail, name='get_expense_group_detail'),
+    path('update_expense_group_api/', update_expense_group_api, name='update_expense_group_api'),
+
     path('create_customer/', add_customer_api, name='add_customer_api')
 ]

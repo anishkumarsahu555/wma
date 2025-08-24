@@ -412,3 +412,167 @@ def update_location_api(request):
     except Exception as e:
         logger.error(f"Error while updating location: {str(e)}")
         return ErrorResponse("Unable to update location. Please try again", status_code=500).to_json_response()
+
+
+
+# ---------------------------- Manage Expense Group api ---------------------------
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['name' ])
+@transaction.atomic
+def add_expense_group_api(request):
+    data = request.POST.dict()
+    try:
+        # Check if Expense Group with same name already exists
+        if ExpenseGroup.objects.filter(
+                name__iexact=data['name'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+        ).exists():
+            logger.error(f"Expense Group with name '{data['name']}' already exists")
+            return ErrorResponse("A expense group with this name already exists", status_code=400).to_json_response()
+        obj = ExpenseGroup(
+            name=data['name'],
+            ownerID_id=get_owner_id(request),
+        )
+        obj.save()
+        logger.info("Expense Group created successfully")
+        return SuccessResponse("Expense Group created successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while creating expense group: {e}")
+        return ErrorResponse("Unable to add new expense group. Please try again").to_json_response()
+
+class ExpenseGroupListJson(BaseDatatableView):
+    order_columns = [ 'name',  'dateCreated']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        return ExpenseGroup.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(self.request))
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search)
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </button>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+
+            json_data.append([
+                escape(item.name),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+            ])
+
+        return json_data
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_expense_group_api(request):
+
+    obj_id = request.POST.get("id")
+    try:
+        try:
+            obj = ExpenseGroup.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+        except ExpenseGroup.DoesNotExist:
+            logger.error(f"Expense Group not found")
+            return ErrorResponse("Expense Group not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.save()
+
+        logger.info("Expense Group deleted successfully")
+        return SuccessResponse("Expense Group deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting Expense Group: {e}")
+        return ErrorResponse(str(e), status_code=500).to_json_response()
+
+
+
+@require_http_methods(["GET"])
+@validate_input(['id'])
+def get_expense_group_detail(request):
+    try:
+        obj_id = request.GET.get('id')
+        # Get single staff user
+        try:
+            obj = ExpenseGroup.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+            data = {
+                'id': obj.id,
+                'name': obj.name,
+            }
+            logger.info("Expense Group fetched successfully")
+            return SuccessResponse("Expense Group fetched successfully", data=data).to_json_response()
+        except ExpenseGroup.DoesNotExist:
+            logger.error(f"Expense Group with ID '{obj_id}' not found")
+            return ErrorResponse("Expense Group not found", status_code=404).to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while fetching Expense Group: {e}")
+        return ErrorResponse( 'Unable to fetch expense group. Please try again', status_code=500).to_json_response()
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['name', 'id' ])
+@transaction.atomic
+def update_expense_group_api(request):
+    data = request.POST.dict()
+    try:
+        # Check if Expense Group exists and belongs to the owner
+        try:
+            obj = ExpenseGroup.objects.get(
+                id=data['id'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+            )
+        except ExpenseGroup.DoesNotExist:
+            logger.error(f"Expense Group with ID {data["id"]}' not found")
+            return ErrorResponse("Expense Group not found", status_code=404).to_json_response()
+
+        # Check if another Expense Group with the same name already exists (excluding current Expense Group)
+        if (ExpenseGroup.objects
+                .filter(
+            name__iexact=data['name'],
+            ownerID_id=get_owner_id(request),
+            isDeleted=False
+        )
+                .exclude(id=data['id'])
+                .exists()):
+            logger.error(f"Another expense group with name '{data['name']}' already exists")
+            return ErrorResponse("A expense group with this name already exists", status_code=400).to_json_response()
+
+        # Update the Expense Group
+        obj.name = data['name']
+        obj.save()
+
+        logger.info(f"Expense Group '{data['id']}' updated successfully")
+        return SuccessResponse("Expense Group updated successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while updating expense group: {str(e)}")
+        return ErrorResponse("Unable to update expense group. Please try again", status_code=500).to_json_response()

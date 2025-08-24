@@ -45,3 +45,6 @@ def manage_orders(request):
 
 def manage_profile(request):
     return render(request, 'wmaApp/profile/manage_profile.html')
+
+def manage_expense_group(request):
+    return render(request, 'wmaApp/expense_group/manage_expense_group.html')
