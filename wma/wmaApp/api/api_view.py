@@ -878,7 +878,7 @@ def get_category_detail(request):
                 'name': obj.name,
             }
             logger.info("Category fetched successfully")
-            return SuccessResponse("Location fetched successfully", data=data).to_json_response()
+            return SuccessResponse("Category fetched successfully", data=data).to_json_response()
         except Category.DoesNotExist:
             logger.error(f"Category with ID '{obj_id}' not found")
             return ErrorResponse("Category not found", status_code=404).to_json_response()
@@ -927,4 +927,164 @@ def update_category_api(request):
     except Exception as e:
         logger.error(f"Error while updating Category: {str(e)}")
         return ErrorResponse("Unable to update Category. Please try again", status_code=500).to_json_response()
+
+
+# ---------------------------- Unit api ---------------------------
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['name' ])
+@transaction.atomic
+def add_unit_api(request):
+    data = request.POST.dict()
+    try:
+        # Check if location with same name already exists
+        if Unit.objects.filter(
+                name__iexact=data['name'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+        ).exists():
+            logger.error(f"Unit with name '{data['name']}' already exists")
+            return ErrorResponse("A Unit with this name already exists", status_code=400).to_json_response()
+        obj = Unit(
+            name=data['name'],
+            ownerID_id=get_owner_id(request),
+        )
+        obj.save()
+        logger.info("Unit created successfully")
+        return SuccessResponse("Unit created successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while creating Unit: {e}")
+        return ErrorResponse("Unable to add new Unit. Please try again").to_json_response()
+
+class UnitListJson(BaseDatatableView):
+    order_columns = [ 'name',  'dateCreated']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        return Unit.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(self.request))
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search)
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </button>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+
+            json_data.append([
+                escape(item.name),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+            ])
+
+        return json_data
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_unit_api(request):
+
+    obj_id = request.POST.get("id")
+    try:
+        try:
+            obj = Unit.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+        except Unit.DoesNotExist:
+            logger.error(f"Unit not found")
+            return ErrorResponse("Unit not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.save()
+
+        logger.info("Unit deleted successfully")
+        return SuccessResponse("Unit deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting Unit: {e}")
+        return ErrorResponse("Error while deleting Unit", status_code=500).to_json_response()
+
+
+
+@require_http_methods(["GET"])
+@validate_input(['id'])
+def get_unit_detail(request):
+    try:
+        obj_id = request.GET.get('id')
+        try:
+            obj = Unit.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+            data = {
+                'id': obj.id,
+                'name': obj.name,
+            }
+            logger.info("Unit fetched successfully")
+            return SuccessResponse("Unit fetched successfully", data=data).to_json_response()
+        except Unit.DoesNotExist:
+            logger.error(f"Unit with ID '{obj_id}' not found")
+            return ErrorResponse("Unit not found", status_code=404).to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while fetching Unit: {e}")
+        return ErrorResponse( 'Server Error', status_code=500).to_json_response()
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['name', 'id' ])
+@transaction.atomic
+def update_unit_api(request):
+    data = request.POST.dict()
+    try:
+        try:
+            obj = Unit.objects.get(
+                id=data['id'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+            )
+        except Unit.DoesNotExist:
+            logger.error(f"Unit with ID {data["id"]}' not found")
+            return ErrorResponse("Unit not found", status_code=404).to_json_response()
+
+        if (Unit.objects
+                .filter(
+            name__iexact=data['name'],
+            ownerID_id=get_owner_id(request),
+            isDeleted=False
+        )
+                .exclude(id=data['id'])
+                .exists()):
+            logger.error(f"Another Unit with name '{data['name']}' already exists")
+            return ErrorResponse("A Unit with this name already exists", status_code=400).to_json_response()
+
+        # Update the location
+        obj.name = data['name']
+        obj.save()
+
+        logger.info(f"Unit '{data['id']}' updated successfully")
+        return SuccessResponse("Unit updated successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while updating Unit: {str(e)}")
+        return ErrorResponse("Unable to update Unit. Please try again", status_code=500).to_json_response()
 

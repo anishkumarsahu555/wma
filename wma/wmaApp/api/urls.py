@@ -39,4 +39,10 @@ urlpatterns = [
     path('get_category_detail/', get_category_detail, name='get_category_detail'),
     path('update_category_api/', update_category_api, name='update_category_api'),
 
+    # unit api urls
+    path('add_unit_api/', add_unit_api, name='add_unit_api'),
+    path('UnitListJson/', UnitListJson.as_view(), name='UnitListJson'),
+    path('delete_unit_api/', delete_unit_api, name='delete_unit_api'),
+    path('get_unit_detail/', get_unit_detail, name='get_unit_detail'),
+    path('update_unit_api/', update_unit_api, name='update_unit_api'),
 ]

@@ -59,3 +59,6 @@ def manage_expense_group(request):
 
 def manage_category(request):
     return render(request, 'wmaApp/inventory/manage_category.html')
+
+def manage_unit(request):
+    return render(request, 'wmaApp/inventory/manage_units.html')
