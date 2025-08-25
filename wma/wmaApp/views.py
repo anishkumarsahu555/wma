@@ -62,3 +62,6 @@ def manage_category(request):
 
 def manage_unit(request):
     return render(request, 'wmaApp/inventory/manage_units.html')
+
+def manage_hsn_and_tax(request):
+    return render(request, 'wmaApp/inventory/manage_tax_and_hsn.html')

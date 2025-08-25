@@ -1088,3 +1088,168 @@ def update_unit_api(request):
         logger.error(f"Error while updating Unit: {str(e)}")
         return ErrorResponse("Unable to update Unit. Please try again", status_code=500).to_json_response()
 
+
+# ---------------------------- HSN and Tax api ---------------------------
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['name', 'tax' ])
+@transaction.atomic
+def add_hsn_and_tax_api(request):
+    data = request.POST.dict()
+    try:
+        if TaxAndHsn.objects.filter(
+                hsn__iexact=data['name'],
+                taxRate=data['tax'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+        ).exists():
+            logger.error(f"Hsn with name '{data['name']}' and Tax rate '{data['tax']}' already exists")
+            return ErrorResponse("A HSN with this detail already exists", status_code=400).to_json_response()
+        obj = TaxAndHsn(
+            hsn=data['name'],
+            taxRate=data['tax'],
+            ownerID_id=get_owner_id(request),
+        )
+        obj.save()
+        logger.info("HSN Tax created successfully")
+        return SuccessResponse("HSN Tax created successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while creating HSN Tax: {e}")
+        return ErrorResponse("Unable to add new HSN Tax. Please try again").to_json_response()
+
+class HSNTAXListJson(BaseDatatableView):
+    order_columns = [ 'name','taxRate',  'dateCreated']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        return TaxAndHsn.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(self.request))
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(hsn__icontains=search)
+                | Q(taxRate__icontains=search)| Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </button>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+
+            json_data.append([
+                escape(item.hsn),
+                escape(item.taxRate),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+            ])
+
+        return json_data
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_hsn_and_tax_api(request):
+
+    obj_id = request.POST.get("id")
+    try:
+        try:
+            obj = TaxAndHsn.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+        except TaxAndHsn.DoesNotExist:
+            logger.error(f"HSN Tax not found")
+            return ErrorResponse("HSN Tax not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.save()
+
+        logger.info("HSN Tax deleted successfully")
+        return SuccessResponse("HSN Tax deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting HSN Tax: {e}")
+        return ErrorResponse("Error while deleting HSN Tax", status_code=500).to_json_response()
+
+
+
+@require_http_methods(["GET"])
+@validate_input(['id'])
+def get_hsn_and_tax_detail(request):
+    try:
+        obj_id = request.GET.get('id')
+        try:
+            obj = TaxAndHsn.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+            data = {
+                'id': obj.id,
+                'name': obj.hsn,
+                'tax': obj.taxRate,
+            }
+            logger.info("HSN Tax fetched successfully")
+            return SuccessResponse("HSN Tax fetched successfully", data=data).to_json_response()
+        except TaxAndHsn.DoesNotExist:
+            logger.error(f"HSN Tax with ID '{obj_id}' not found")
+            return ErrorResponse("HSN Tax not found", status_code=404).to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while fetching HSN Tax: {e}")
+        return ErrorResponse( 'Server Error', status_code=500).to_json_response()
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['name', 'id','tax' ])
+@transaction.atomic
+def update_hsn_and_tax_api(request):
+    data = request.POST.dict()
+    try:
+        try:
+            obj = TaxAndHsn.objects.get(
+                id=data['id'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+            )
+        except TaxAndHsn.DoesNotExist:
+            logger.error(f"HSN Tax with ID {data["id"]}' not found")
+            return ErrorResponse("HSN Tax not found", status_code=404).to_json_response()
+
+        if (TaxAndHsn.objects
+                .filter(
+            hsn__iexact=data['name'],
+            taxRate=data['tax'],
+            ownerID_id=get_owner_id(request),
+            isDeleted=False
+        )
+                .exclude(id=data['id'])
+                .exists()):
+            logger.error(f"Another HSN with name '{data['name']}' and Tax Rate '{data['tax']}'  already exists")
+            return ErrorResponse("A HSN Tax with this name already exists", status_code=400).to_json_response()
+
+        # Update the location
+        obj.hsn = data['name']
+        obj.taxRate = data['tax']
+        obj.save()
+
+        logger.info(f"HSN Tax '{data['id']}' updated successfully")
+        return SuccessResponse("HSN Tax updated successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while updating HSN Tax: {str(e)}")
+        return ErrorResponse("Unable to update HSN Tax. Please try again", status_code=500).to_json_response()
+

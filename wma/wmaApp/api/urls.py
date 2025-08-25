@@ -45,4 +45,12 @@ urlpatterns = [
     path('delete_unit_api/', delete_unit_api, name='delete_unit_api'),
     path('get_unit_detail/', get_unit_detail, name='get_unit_detail'),
     path('update_unit_api/', update_unit_api, name='update_unit_api'),
+
+
+    # HSN and tax api urls
+    path('add_hsn_and_tax_api/', add_hsn_and_tax_api, name='add_hsn_and_tax_api'),
+    path('HSNTAXListJson/', HSNTAXListJson.as_view(), name='HSNTAXListJson'),
+    path('delete_hsn_and_tax_api/', delete_hsn_and_tax_api, name='delete_hsn_and_tax_api'),
+    path('get_hsn_and_tax_detail/', get_hsn_and_tax_detail, name='get_hsn_and_tax_detail'),
+    path('update_hsn_and_tax_api/', update_hsn_and_tax_api, name='update_hsn_and_tax_api'),
 ]
