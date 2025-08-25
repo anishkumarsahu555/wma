@@ -1,0 +1,481 @@
+{% extends 'wmaApp/baseIndex.html' %}
+{% load static %}
+{% block title %}
+<title>Manage Category</title>
+{% endblock %}
+{% block css %}
+{% endblock %}
+{% block body %}
+
+<style>
+
+    #UserTable_length {
+        left: 20px;
+        position: absolute;
+    }
+
+    #UserTable_filter {
+        width: 50%;
+        float: right;
+    }
+
+    .dt-buttons {
+        position: absolute;
+        left: 190px;
+    }
+    .dt-length{
+        position: absolute;
+    }
+
+    input[type=search] {
+        width: 100px !important;
+    }
+</style>
+
+<div class="ui right aligned basic  grid">
+    <div class="sixteen wide column">
+        <div class="ui  pointing secondary menu">
+            <div style="cursor: pointer;" class="item active" data-tab="user"
+            >Category List
+            </div>
+            <div style=" position: absolute;right: 1.5rem;top: 18px;">
+                <button class="ui green mini plus button right" onclick="showUserModal()">
+                    <i class="plus square outline icon"></i>
+                    Add Category
+                </button>
+            </div>
+        </div>
+        <div class="ui tab " data-tab="user">
+
+            <div class="row" style="padding-left: 5px; padding-right: 5px">
+                <div class="wide">
+
+                    <table class="ui unstackable tiny sortable celled very nowrap very compact table" id="UserTable"
+                           style="margin-top: 5px;width: 100%">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Added On</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="ui modal" id="myModalUser">
+                    <i class="close icon"></i>
+                    <div class="header">
+                        Add Category
+                    </div>
+                    <div class="content">
+
+                        <form class="ui tiny form" id="addForm">{% csrf_token %}
+
+                            <div class="one required fields">
+                                <div class="sixteen wide field">
+                                    <label>Name</label>
+                                    <input type="text" name="Name" placeholder="Full Name" id="CompanyUserName">
+                                </div>
+
+                            </div>
+                        </form>
+
+                        <div class="actions" style="padding-top: 20px; padding-bottom: 20px ;float: right">
+                            <div class="ui cancel button">Cancel</div>
+                            <button class="ui right labeled icon button green saveBtn" onclick="addDetail()">
+                                Submit
+                                <i class="checkmark icon"></i>
+                            </button>
+                            <button style="display: none" class="ui right labeled icon button green saveBtnLoad" >
+                                Saving ...
+                                <i class="checkmark icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui basic modal custom" id="deleteUser">
+                <div class="ui icon header">
+                    <i class="archive icon"></i>
+                    Details will be Deleted
+                </div>
+                <div class="content">
+                    <p style="text-align: center">The detail will be deleted, are you sure to delete this Detail?</p>
+                </div>
+                <div class="actions">
+                    <div class="ui red basic cancel inverted button">
+                        <i class="remove icon"></i>
+                        No
+                    </div>
+                    <input type="hidden" id="UserID">
+                    <div class="ui green ok inverted button" onclick="deleteDetail()">
+                        <i class="checkmark icon"></i>
+                        Yes
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui modal" id="userModal">
+                <i class="close icon"></i>
+                <div class="header">
+                    Edit Details
+                </div>
+                <div class="content">
+
+                    <form class="ui tiny form" id="EditForm">{% csrf_token %}
+
+                        <div class="one required fields">
+                            <div class="sixteen wide field">
+                                <label>Name</label>
+                                <input type="text" name="Name" placeholder="Full Name" id="CompanyUserNameEdit">
+                            </div>
+
+                        </div>
+
+                        <input type="hidden" id="EditUserId">
+                    </form>
+
+                    <div class="actions" style="padding-top: 20px; padding-bottom: 20px ;float: right">
+                        <div class="ui cancel button">Cancel</div>
+                        <button class="ui right labeled icon button green saveBtn" onclick="editDetail()">
+                            Update
+                            <i class="checkmark icon"></i>
+                        </button>
+                        <button style="display: none" class="ui right labeled icon button green saveBtnLoad" >
+                            Saving ...
+                            <i class="checkmark icon"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+
+    var userTab;
+
+
+    function showUserModal() {
+        $('#myModalUser').modal('show');
+        myOwnReset();
+    }
+
+
+    function addDetail() {
+        showLoading();
+        var CompanyUserName = $('#CompanyUserName').val();
+        if (CompanyUserName === '') {
+            $('body')
+                .toast({
+                    class: 'orange',
+                    message: 'Name is required'
+                })
+            ;
+            hideLoading();
+            return false;
+        }
+        var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
+
+        data = new FormData();
+        data.append('name', CompanyUserName);
+        data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
+        debugger;
+
+        $.ajax({
+            type: 'post',
+            url: "{% url 'wma_api:add_category_api' %}",
+            data: data,
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function (response) {
+                console.log(response);
+                if (response.success) {
+                    $('body')
+                        .toast({
+                            class: 'success',
+                            message:response.message
+                        })
+                    ;
+
+
+                    userTab.ajax.reload(null, false);
+                    $('#addForm').trigger('reset');
+                    $('#myModalUser').modal('toggle');
+                    hideLoading();
+                } else {
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: response.message
+                        })
+                    ;
+                    hideLoading();
+
+                }
+
+                return response;
+            },
+            error: function (xhr, status, error) {
+                response = JSON.parse(xhr.responseText);
+
+                if(!response.success){
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: response.message
+                        })
+                    ;
+                    hideLoading();
+                }
+                else{
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: 'An error occurred !'
+                        })
+                    ;
+                    hideLoading();
+                }
+
+
+            }
+        });
+
+
+    }
+
+
+    // user Details
+
+    userTab = $('#UserTable').DataTable({
+        dom: 'Blfrtip',
+        "scrollY": "350px",
+        "scrollX": true,
+        fixedColumns: {
+            left: 1,
+            right: 1
+        },
+        buttons: [{
+            extend: 'excel',
+            exportOptions: {
+                columns: [1, 2, 3]
+            }
+        }
+
+        ],
+        "columnDefs": [
+            {"name": "name", "targets": 0, "orderable": true},
+            {"name": "datetime", "targets": 1, "orderable": true},
+            {"name": "action", "targets": 2, "orderable": false}
+        ],
+        aaSorting: [[1, 'desc']],
+        "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        "pageLength": 10,
+        "processing": true,
+        "serverSide": true,
+        "ajax": "{% url 'wma_api:CategoryListJson' %}"
+    });
+
+
+    function delUser(id) {
+        $('#deleteUser')
+            .modal('show')
+        ;
+        $('#UserID').val(id)
+    }
+
+    function deleteDetail() {
+        var id = $('#UserID').val();
+        var formdata = new FormData();
+        formdata.append('id', id);
+
+        $.ajax({
+            url: "{% url 'wma_api:delete_category_api' %}",
+            type: "post",
+            data: formdata,
+            contentType: false,
+            cache: false,
+            processData: false,
+
+            success: function (response) {
+                if (response.success) {
+                    $('body')
+                        .toast({
+                            class: 'success',
+                            message: response.message
+                        })
+                    ;
+
+
+                    userTab.ajax.reload(null, false);
+                } else {
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: response.message
+                        })
+                    ;
+
+                }
+
+                return response;
+            },
+            error: function () {
+                $('body')
+                    .toast({
+                        class: 'error',
+                        message: 'An error occurred !'
+                    })
+                ;
+            }
+        });
+
+    }
+
+    function GetUserDetails(id) {
+        myOwnReset();
+        $('#userModal').modal('show');
+        // var formdata = new FormData();
+        // formdata.append('id', id);
+        debugger;
+        $.ajax({
+            type: 'get',
+            url: "{% url 'wma_api:get_category_detail' %}",
+            data: { id: id },
+            success: function (response) {
+
+                console.log(response);
+                $('#EditUserId').val(response.data['id']);
+                $('#CompanyUserNameEdit').val(response.data['name']);
+
+            },
+            error: function () {
+                $('body')
+                    .toast({
+                        class: 'error',
+                        message: 'An error occurred !'
+                    })
+                ;
+            }
+        });
+    }
+
+    function editDetail() {
+        showLoading();
+        var id = $('#EditUserId').val();
+        var CompanyUserName = $('#CompanyUserNameEdit').val();
+
+        if (CompanyUserName === '') {
+            $('body')
+                .toast({
+                    class: 'orange',
+                    message: 'Name is required'
+                })
+            ;
+            hideLoading();
+            return false;
+        }
+        var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
+
+        data = new FormData();
+        data.append('id', id);
+        data.append('name', CompanyUserName);
+        data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
+        debugger;
+
+        $.ajax({
+            type: 'post',
+            url: "{% url 'wma_api:update_category_api' %}",
+            data: data,
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function (response) {
+                console.log(response);
+                if (response.success) {
+                    $('body')
+                        .toast({
+                            class: 'success',
+                            message:response.message
+                        })
+                    ;
+
+
+                    userTab.ajax.reload(null, false);
+                    $('#EditForm').trigger('reset');
+                    $('#userModal').modal('toggle');
+                    hideLoading();
+                } else {
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: response.message
+                        })
+                    ;
+                    hideLoading();
+
+                }
+
+                return response;
+            },
+            error: function (xhr, status, error) {
+                response = JSON.parse(xhr.responseText);
+
+                if(!response.success){
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: response.message
+                        })
+                    ;
+                    hideLoading();
+                }
+                else{
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: 'An error occurred !'
+                        })
+                    ;
+                    hideLoading();
+                }
+
+
+            }
+        });
+
+
+    }
+
+    $(document).ready(function(){
+        $('.ui.form')
+            .form({
+                fields: {
+                    fileInput:{
+                        identifier: 'name',
+                        rules: [
+                            {
+                                type : 'empty'
+                            }
+                        ]
+                    }
+                }
+            });
+    });
+
+    function myOwnReset(){
+        $('.ui.form').form('reset');
+    }
+</script>
+
+{% endblock %}

@@ -56,3 +56,6 @@ def manage_profile(request):
 
 def manage_expense_group(request):
     return render(request, 'wmaApp/expense_group/manage_expense_group.html')
+
+def manage_category(request):
+    return render(request, 'wmaApp/inventory/manage_category.html')

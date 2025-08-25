@@ -15,5 +15,6 @@ urlpatterns = [
     path('manage_orders/', views.manage_orders, name='manage_orders'),
     path('manage_profile/', views.manage_profile, name='manage_profile'),
     path('manage_expense_group/', views.manage_expense_group, name='manage_expense_group'),
+    path('manage_category/', views.manage_category, name='manage_category'),
 
 ]

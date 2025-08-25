@@ -32,4 +32,11 @@ urlpatterns = [
     path('get_customer_detail/', get_customer_detail, name='get_customer_detail'),
     path('update_customer_api/', update_customer_api, name='update_customer_api'),
 
+    # category api urls
+    path('add_category_api/', add_category_api, name='add_category_api'),
+    path('CategoryListJson/', CategoryListJson.as_view(), name='CategoryListJson'),
+    path('delete_category_api/', delete_category_api, name='delete_category_api'),
+    path('get_category_detail/', get_category_detail, name='get_category_detail'),
+    path('update_category_api/', update_category_api, name='update_category_api'),
+
 ]
