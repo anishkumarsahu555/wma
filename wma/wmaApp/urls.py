@@ -4,7 +4,13 @@ from . import views
 app_name = 'wmaApp'  # Add this line to specify the app_name
 
 urlpatterns = [
-    path('', views.dashboard, name='dashboard'),
+    path('', views.login_page, name='login_page'),
+    path('logout/', views.user_logout, name='logout'),
+    path('post_login/', views.post_login, name='post_login'),
+    path('home/', views.homepage, name='homepage'),
+
+
+    path('dashboard/', views.dashboard, name='dashboard'),
     path('admin_home/', views.admin_home, name='admin_home'),
     path('manage_staff/', views.manage_staff, name='manage_staff'),
     path('manage_customer/', views.manage_customer, name='manage_customer'),

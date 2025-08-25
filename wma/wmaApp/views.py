@@ -1,9 +1,54 @@
-from django.shortcuts import render
+from django.contrib.auth import logout, authenticate, login
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
 
 from utils.get_owner_detail import get_owner_id
 from utils.logger import logger
 from .models import *
 # Create your views here.
+
+
+
+def login_page(request):
+    logger.info("Login page called")
+    return render(request, 'wmaApp/login.html')
+
+
+def user_logout(request):
+    logout(request)
+    logger.info("User logged out")
+    return redirect("wmaApp:login_page")
+
+@csrf_exempt
+def post_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('userName')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            user_groups = request.user.groups.values_list('name', flat=True)
+            if 'Owner' in user_groups or 'Driver' in user_groups or 'Manager' in user_groups :
+                return JsonResponse({'message': 'success', 'data': '/home/'}, safe=False)
+        return JsonResponse({'message': 'fail'}, safe=False)
+    return JsonResponse({'message': 'fail'}, safe=False)
+
+def homepage(request):
+    if request.user.is_authenticated:
+        if 'Owner' in request.user.groups.values_list('name',
+                                                      flat=True) or 'Manager' in request.user.groups.values_list(
+            'name', flat=True):
+            return redirect('wmaApp:dashboard')
+        elif 'Driver' in request.user.groups.values_list('name', flat=True):
+            return redirect('wmaApp:dashboard')
+        else:
+            return redirect("wmaApp:login_page")
+    else:
+        return redirect("wmaApp:login_page")
+
 
 def dashboard(request):
     logger.info("Dashboard called")

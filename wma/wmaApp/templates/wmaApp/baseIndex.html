@@ -151,7 +151,7 @@
         <div class="item">
             <div class="header">General</div>
             <div class="menu">
-                <a class="item" href="#">
+                <a class="item" href="{% url 'wmaApp:dashboard' %}">
                     <div>
                         <i class="tachometer alternate icon"></i>
                         Dashboard
@@ -228,11 +228,11 @@
         </div>
         <div class="item">
             <div class="header">
-                Sales
+                Manager Sale
             </div>
             <div class="menu">
                 <a class="item" href="#">
-                    <div><i class="shopping cart icon"></i>Add Sale</div>
+                    <div><i class="receipt icon"></i>Add Sale</div>
                 </a>
                 <a class="item" href="#">
                     <div><i class="book icon"></i>Sales List</div>
@@ -240,77 +240,6 @@
 
             </div>
         </div>
-             <div class="item">
-            <div class="header">
-                Cash Counter
-            </div>
-            <div class="menu">
-                <a class="item" href="#">
-                    <div><i class="calendar check icon"></i>Today's Cash Counter</div>
-                </a> <a class="item" href="#">
-                    <div><i class="calendar check icon"></i>Today's Collection Counter</div>
-                </a>
-                <a class="item" href="#">
-                    <div><i class="calendar alternate icon"></i>Cash Counter List</div>
-                </a>
-            </div>
-        </div>
-
-        <div class="item">
-            <div class="header">
-                Cutomer
-            </div>
-            <div class="menu">
-                <a class="item" href="{% url 'wmaApp:manage_customer' %}">
-                    <div><i class="user friends icon"></i>Party Group List</div>
-                </a>
-                <a class="item" href="#">
-                    <div><i class="address book icon"></i>Party List</div>
-                </a>
-
-            </div>
-        </div>
-
-          {% comment %}      <div class="item">
-            <div class="header">
-                Attendance
-            </div>
-            <div class="menu">
-                <a class="item" href="#">
-                    <div><i class="calendar check icon"></i>Today's Attendance</div>
-                </a>
-                <a class="item" href="#">
-                    <div><i class="calendar alternate icon"></i>Attendance Report</div>
-                </a>
-
-            </div>
-        </div>{% endcomment %}
-
-        <div class="item">
-            <div class="header">
-                Banks
-            </div>
-            <div class="menu">
-                <a class="item" href="#">
-                    <div><i class="university icon"></i>Bank List</div>
-                </a>
-
-            </div>
-        </div>
-
-        <div class="item">
-            <div class="header">
-                Message History
-            </div>
-            <div class="menu">
-                <a class="item" href="#">
-                    <div><i class="comment dots outline icon"></i>Message List</div>
-                </a>
-
-            </div>
-        </div>
-
-
         <div class="item">
             <div class="header">
                 Profile
@@ -319,7 +248,7 @@
                 <a class="item" href="#">
                     <div><i class="user icon"></i>My Profile</div>
                 </a>
-                <a class="item" href="#">
+                <a class="item" href="{% url 'wmaApp:logout' %}">
                     <div><i class="sign out alternate icon"></i>Logout</div>
                 </a>
             </div>
@@ -549,7 +478,7 @@ Collection side bar
         <div class="ui dropdown item">
             <i class="user cirlce icon"></i>
             <div class="menu">
-                <a href="#" class="item">
+                <a href="{% url 'wmaApp:logout' %}" class="item">
                     <i class="sign out alternate icon"></i>
                     Logout
                 </a>
