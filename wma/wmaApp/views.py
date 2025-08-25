@@ -32,8 +32,6 @@ def manage_customer(request):
     return render(request, 'wmaApp/customer/manage_customer.html', context)
 
 
-def manage_product(request):
-    return render(request, 'wmaApp/manage_product.html')
 
 
 def manage_supplier(request):
@@ -45,6 +43,7 @@ def manage_jar_counter(request):
 
 
 def manage_location(request):
+    logger.info("Manage location called")
     return render(request, 'wmaApp/location/manage_locations.html')
 
 
@@ -55,13 +54,31 @@ def manage_profile(request):
     return render(request, 'wmaApp/profile/manage_profile.html')
 
 def manage_expense_group(request):
+    logger.info("Manage expense group called")
     return render(request, 'wmaApp/expense_group/manage_expense_group.html')
 
 def manage_category(request):
+    logger.info("Manage category called")
     return render(request, 'wmaApp/inventory/manage_category.html')
 
 def manage_unit(request):
+    logger.info("Manage unit called")
     return render(request, 'wmaApp/inventory/manage_units.html')
 
 def manage_hsn_and_tax(request):
+    logger.info("Manage HSN and Tax called")
     return render(request, 'wmaApp/inventory/manage_tax_and_hsn.html')
+
+def manage_product(request):
+    logger.info("Manage product called")
+    categories = Category.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request))
+    taxs = TaxAndHsn.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request))
+    units = Unit.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request))
+
+    context = {
+        'categories': categories,
+        'taxs': taxs,
+        'units': units
+    }
+
+    return render(request, 'wmaApp/inventory/manage_products.html', context)

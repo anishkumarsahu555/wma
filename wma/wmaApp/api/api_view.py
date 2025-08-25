@@ -1253,3 +1253,197 @@ def update_hsn_and_tax_api(request):
         logger.error(f"Error while updating HSN Tax: {str(e)}")
         return ErrorResponse("Unable to update HSN Tax. Please try again", status_code=500).to_json_response()
 
+
+# ---------------------------- Product api ---------------------------
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['product', 'tax', 'category', 'unit', 'rate', 'quantity', 'sellingPrice', 'description' ])
+@transaction.atomic
+def add_product_api(request):
+    data = request.POST.dict()
+    try:
+        if Product.objects.filter(
+                productName__iexact=data['product'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+        ).exists():
+            logger.error(f"Product with name '{data['product']}' already exists")
+            return ErrorResponse("A HSN with this detail already exists", status_code=400).to_json_response()
+        obj = Product(
+            productName=data['product'],
+            productDescription=data['description'],
+            rate=data['rate'],
+            quantity=data['quantity'],
+            sp=data['sellingPrice'],
+            taxID_id=data['tax'],
+            categoryID_id=data['category'],
+            unitID_id=data['unit'],
+            ownerID_id=get_owner_id(request),
+        )
+        obj.save()
+        logger.info("Product created successfully")
+        return SuccessResponse("Product created successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while creating Product: {e}")
+        return ErrorResponse("Unable to add new Product. Please try again").to_json_response()
+
+class ProductListJson(BaseDatatableView):
+    order_columns = [ 'productName','categoryID', 'rate','quantity', 'unitID', 'taxID', 'sp', 'productDescription',  'dateCreated']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        return Product.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(self.request))
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(productName__icontains=search)
+                |Q(categoryID__name__icontains=search)
+                |Q(rate__icontains=search)
+                |Q(quantity__icontains=search)
+                |Q(unitID__name__icontains=search)
+                |Q(taxID__hsn__icontains=search)
+                |Q(sp__icontains=search)
+                |Q(productDescription__icontains=search)
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </button>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+
+            json_data.append([
+                escape(item.productName),
+                escape(item.categoryID.name),
+                escape(item.rate),
+                escape(item.quantity),
+                escape(item.unitID.name),
+                escape(item.taxID.hsn) + ' - ' + escape(item.taxID.taxRate),
+                escape(item.sp),
+                escape(item.productDescription),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+            ])
+
+        return json_data
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_product_api(request):
+
+    obj_id = request.POST.get("id")
+    try:
+        try:
+            obj = Product.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+        except Product.DoesNotExist:
+            logger.error(f"Product not found")
+            return ErrorResponse("Product not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.save()
+
+        logger.info("Product deleted successfully")
+        return SuccessResponse("Product deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting product: {e}")
+        return ErrorResponse("Error while deleting product", status_code=500).to_json_response()
+
+
+
+@require_http_methods(["GET"])
+@validate_input(['id'])
+def get_product_detail(request):
+    try:
+        obj_id = request.GET.get('id')
+        try:
+            obj = Product.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+            data = {
+                'id': obj.id,
+                'name': obj.productName,
+                'description': obj.productDescription,
+                'rate': obj.rate,
+                'quantity': obj.quantity,
+                'unit': obj.unitID.id,
+                'tax': obj.taxID.id,
+                'sellingPrice': obj.sp,
+                'category': obj.categoryID.id,
+
+            }
+            logger.info("Product fetched successfully")
+            return SuccessResponse("Product fetched successfully", data=data).to_json_response()
+        except Product.DoesNotExist:
+            logger.error(f"Product with ID '{obj_id}' not found")
+            return ErrorResponse("Product not found", status_code=404).to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while fetching Product: {e}")
+        return ErrorResponse( 'Server Error', status_code=500).to_json_response()
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['id', 'product', 'tax', 'category', 'unit', 'rate', 'quantity', 'sellingPrice', 'description'  ])
+@transaction.atomic
+def update_product_api(request):
+    data = request.POST.dict()
+    print(data,data['rate'])
+    try:
+        try:
+            obj = Product.objects.get(
+                id=data['id'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+            )
+        except Product.DoesNotExist:
+            logger.error(f"Product with ID {data["id"]}' not found")
+            return ErrorResponse("Product not found", status_code=404).to_json_response()
+
+        if (Product.objects
+                .filter(
+            productName__iexact=data['product'],
+            ownerID_id=get_owner_id(request),
+            isDeleted=False
+        )
+                .exclude(id=data['id'])
+                .exists()):
+            logger.error(f"Another product with name '{data['product']}'  already exists")
+            return ErrorResponse("A Product with this name already exists", status_code=400).to_json_response()
+
+        # Update the location
+        obj.productName=data['product']
+        obj.productDescription=data['description']
+        obj.rate=data['rate']
+        obj.quantity=data['quantity']
+        obj.sp=data['sellingPrice']
+        obj.taxID_id=data['tax']
+        obj.categoryID_id=data['category']
+        obj.unitID_id=data['unit']
+        obj.save()
+
+        logger.info(f"Product '{data['id']}' updated successfully")
+        return SuccessResponse("Product updated successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while updating Product: {str(e)}")
+        return ErrorResponse("Unable to update Product. Please try again", status_code=500).to_json_response()

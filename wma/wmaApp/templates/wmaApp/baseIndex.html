@@ -211,12 +211,16 @@
                 Manage Inventory
             </div>
             <div class="menu">
+                <a class="item" href="{% url 'wmaApp:manage_product' %}">
+                    <div><i class="shopping cart icon"></i>Product List</div>
+                </a>
                 <a class="item" href="{% url 'wmaApp:manage_hsn_and_tax' %}">
                     <div><i class="percent icon"></i>HSN & Tax List</div>
                 </a>
                 <a class="item" href="{% url 'wmaApp:manage_category' %}">
                     <div><i class="boxes icon"></i>Category List</div>
-                </a> <a class="item" href="{% url 'wmaApp:manage_unit' %}">
+                </a>
+                <a class="item" href="{% url 'wmaApp:manage_unit' %}">
                     <div><i class="equals icon"></i>Unit List</div>
                 </a>
 

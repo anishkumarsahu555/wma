@@ -53,4 +53,11 @@ urlpatterns = [
     path('delete_hsn_and_tax_api/', delete_hsn_and_tax_api, name='delete_hsn_and_tax_api'),
     path('get_hsn_and_tax_detail/', get_hsn_and_tax_detail, name='get_hsn_and_tax_detail'),
     path('update_hsn_and_tax_api/', update_hsn_and_tax_api, name='update_hsn_and_tax_api'),
+
+    # Product api urls
+    path('add_product_api/', add_product_api, name='add_product_api'),
+    path('ProductListJson/', ProductListJson.as_view(), name='ProductListJson'),
+    path('delete_product_api/', delete_product_api, name='delete_product_api'),
+    path('get_product_detail/', get_product_detail, name='get_product_detail'),
+    path('update_product_api/', update_product_api, name='update_product_api'),
 ]

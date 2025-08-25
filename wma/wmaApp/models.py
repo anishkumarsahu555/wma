@@ -158,6 +158,7 @@ class Product(models.Model):
     productDescription = models.CharField(max_length=100, blank=True, null=True)
     rate = models.FloatField(default=0.00)
     quantity = models.FloatField(default=0)
+    sp = models.FloatField(default=0.00)
     unitID = models.ForeignKey(Unit, on_delete=models.CASCADE,null=True, blank=True)
     categoryID = models.ForeignKey(Category, on_delete=models.CASCADE,null=True, blank=True)
     taxID = models.ForeignKey(TaxAndHsn, on_delete=models.CASCADE,null=True, blank=True)
