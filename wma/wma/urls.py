@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('wmaApp.urls', namespace='wmaApp')),
     path('api/', include('wmaApp.api.urls', namespace='wma_api')),
+    path('cached_api/', include('wmaApp.api_cached.urls', namespace='wma_api_cached')),
     path('', include('pwa.urls')),  # You MUST use an empty string as the URL prefix
 ]
 

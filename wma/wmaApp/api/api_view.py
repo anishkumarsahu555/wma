@@ -1,7 +1,7 @@
 from datetime import datetime
 from django.db import transaction
 from django.db.models import Q
-from django.http import JsonResponse
+from django.core.cache import cache
 from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -22,11 +22,12 @@ from utils.logger import logger
 @transaction.atomic
 def add_staff_api(request):
     data = request.POST.dict()
+    owner_id = get_owner_id(request)
     try:
         profile_pic = request.FILES.get('profile_pic')
         # Get the UserGroup instance
         try:
-            user_group = UserGroup.objects.get(name=data['group'], isDeleted=False)
+            user_group = UserGroup.objects.get(name=data['group'], isDeleted=False, ownerID_id=owner_id)
         except UserGroup.DoesNotExist:
             logger.error(f"UserGroup '{data['group']}' does not exist")
             return ErrorResponse(f"UserGroup '{data['group']}' does not exist").to_json_response()
@@ -41,7 +42,7 @@ def add_staff_api(request):
             address=data.get('address', ''),
             isActive=data.get('is_active', 'active').lower() == 'active',
             startDate=datetime.today().now(),
-            ownerID_id=get_owner_id(request),
+            ownerID_id=owner_id,
         )
         username = 'USER' + get_random_string(length=6, allowed_chars='1234567890')
         while User.objects.select_related().filter(username__exact=username).count() > 0:
@@ -131,7 +132,7 @@ class StaffUserListJson(BaseDatatableView):
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return StaffUser.objects.select_related().filter(isDeleted__exact=False)
+        return StaffUser.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(self.request))
 
     def filter_queryset(self, qs):
 
@@ -190,7 +191,7 @@ def get_staff_detail(request):
         staff_id = request.GET.get('id')
         # Get single staff user
         try:
-            staff = StaffUser.objects.get(id=staff_id, isDeleted=False)
+            staff = StaffUser.objects.get(id=staff_id, isDeleted=False, ownerID_id=get_owner_id(request))
             data = {
                 'id': staff.id,
                 'name': staff.name,
@@ -224,7 +225,7 @@ def delete_staff(request):
     staff_id = request.POST.get("id")
     try:
         try:
-            staff = StaffUser.objects.get(id=staff_id, isDeleted=False)
+            staff = StaffUser.objects.get(id=staff_id, isDeleted=False, ownerID_id=get_owner_id(request))
         except StaffUser.DoesNotExist:
             logger.error(f"Staff user not found")
             return ErrorResponse("Staff user not found", status_code=404).to_json_response()
@@ -580,9 +581,10 @@ def update_expense_group_api(request):
 def add_customer_api(request):
     data = request.POST.dict()
     try:
+        owner_id = get_owner_id(request)
         profile_pic = request.FILES.get('profile_pic')
         try:
-            location = Location.objects.get(id=data['location'], isDeleted=False, ownerID_id=get_owner_id(request))
+            location = Location.objects.get(id=data['location'], isDeleted=False, ownerID_id=owner_id)
         except:
             logger.error(f"Location not found")
             return ErrorResponse("Location not found", status_code=404).to_json_response()
@@ -595,7 +597,7 @@ def add_customer_api(request):
             profile_pic=profile_pic,
             address=data.get('address', ''),
             addedDate=datetime.today().now(),
-            ownerID_id=get_owner_id(request),
+            ownerID_id=owner_id,
         )
         username = 'CUS' + get_random_string(length=8, allowed_chars='1234567890')
         password = get_random_string(length=8, allowed_chars='1234567890')
@@ -616,6 +618,7 @@ def add_customer_api(request):
             group, created = Group.objects.get_or_create(name='Customer')
             group.user_set.add(new_user)
             group.save()
+            cache.delete(f'CustomerList{owner_id}')
         logger.info("Customer user created successfully")
         return SuccessResponse("Customer user created successfully").to_json_response()
     except Exception as e:
@@ -629,9 +632,10 @@ def add_customer_api(request):
 def update_customer_api(request):
     data = request.POST.dict()
     try:
+        owner_id = get_owner_id(request)
         # Get the Location instance
         try:
-            loc = Location.objects.get(id=data['location'], isDeleted=False, ownerID_id=get_owner_id(request))
+            loc = Location.objects.get(id=data['location'], isDeleted=False, ownerID_id=owner_id)
         except Location.DoesNotExist:
             logger.error(f"Location '{data['location']}' does not exist")
             return ErrorResponse(f"Location does not exist").to_json_response()
@@ -644,6 +648,7 @@ def update_customer_api(request):
             obj.address = data.get('address', '')
             obj.phone = data['phone']
             obj.save()
+            cache.delete(f'CustomerList{owner_id}')
 
             logger.info("Customer user updated successfully")
             return SuccessResponse("Customer user updated successfully").to_json_response()
@@ -744,8 +749,9 @@ def delete_customer(request):
 
     id = request.POST.get("id")
     try:
+        owner_id = get_owner_id(request)
         try:
-            obj = Customer.objects.get(id=id, isDeleted=False)
+            obj = Customer.objects.get(id=id, isDeleted=False, ownerID_id=owner_id)
         except Customer.DoesNotExist:
             logger.error(f"Customer user not found")
             return ErrorResponse("Customer user not found", status_code=404).to_json_response()
@@ -759,6 +765,7 @@ def delete_customer(request):
         if obj.userID:
             obj.userID.is_active = False
             obj.userID.save()
+        cache.delete(f'CustomerList{owner_id}')
         logger.info("Customer user deleted successfully")
         return SuccessResponse("Customer user deleted successfully").to_json_response()
 
@@ -1262,9 +1269,10 @@ def update_hsn_and_tax_api(request):
 def add_product_api(request):
     data = request.POST.dict()
     try:
+        owner_id = get_owner_id(request)
         if Product.objects.filter(
                 productName__iexact=data['product'],
-                ownerID_id=get_owner_id(request),
+                ownerID_id=owner_id,
                 isDeleted=False
         ).exists():
             logger.error(f"Product with name '{data['product']}' already exists")
@@ -1278,9 +1286,10 @@ def add_product_api(request):
             taxID_id=data['tax'],
             categoryID_id=data['category'],
             unitID_id=data['unit'],
-            ownerID_id=get_owner_id(request),
+            ownerID_id=owner_id,
         )
         obj.save()
+        cache.delete(f'ProductList{owner_id}')
         logger.info("Product created successfully")
         return SuccessResponse("Product created successfully").to_json_response()
     except Exception as e:
@@ -1350,11 +1359,11 @@ class ProductListJson(BaseDatatableView):
 @validate_input(["id"])
 @transaction.atomic
 def delete_product_api(request):
-
+    owner_id = get_owner_id(request)
     obj_id = request.POST.get("id")
     try:
         try:
-            obj = Product.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+            obj = Product.objects.get(id=obj_id, isDeleted=False, ownerID_id=owner_id)
         except Product.DoesNotExist:
             logger.error(f"Product not found")
             return ErrorResponse("Product not found", status_code=404).to_json_response()
@@ -1362,7 +1371,7 @@ def delete_product_api(request):
         # Soft delete
         obj.isDeleted = True
         obj.save()
-
+        cache.delete(f'ProductList{owner_id}')
         logger.info("Product deleted successfully")
         return SuccessResponse("Product deleted successfully").to_json_response()
 
@@ -1407,12 +1416,12 @@ def get_product_detail(request):
 @transaction.atomic
 def update_product_api(request):
     data = request.POST.dict()
-    print(data,data['rate'])
     try:
+        owner_id = get_owner_id(request)
         try:
             obj = Product.objects.get(
                 id=data['id'],
-                ownerID_id=get_owner_id(request),
+                ownerID_id=owner_id,
                 isDeleted=False
             )
         except Product.DoesNotExist:
@@ -1422,7 +1431,7 @@ def update_product_api(request):
         if (Product.objects
                 .filter(
             productName__iexact=data['product'],
-            ownerID_id=get_owner_id(request),
+            ownerID_id=owner_id,
             isDeleted=False
         )
                 .exclude(id=data['id'])
@@ -1440,10 +1449,57 @@ def update_product_api(request):
         obj.categoryID_id=data['category']
         obj.unitID_id=data['unit']
         obj.save()
-
+        cache.delete(f'ProductList{owner_id}')
         logger.info(f"Product '{data['id']}' updated successfully")
         return SuccessResponse("Product updated successfully").to_json_response()
 
     except Exception as e:
         logger.error(f"Error while updating Product: {str(e)}")
         return ErrorResponse("Unable to update Product. Please try again", status_code=500).to_json_response()
+
+
+# ------------------ Sales --------------------------------------
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['customer', 'saleDate', 'grandTotal', 'additionalCharge', 'tax', 'datas', 'subTotal'])
+@transaction.atomic
+def add_sales_api(request):
+    data = request.POST.dict()
+    print(data)
+
+    try:
+        owner_id = get_owner_id(request)
+        obj = Sales(
+            customerID_id=data['customer'],
+            saleDate=datetime.strptime(data['saleDate'], '%d/%m/%Y'),
+            totalAmount=data['subTotal'],
+            totalTax=data['tax'],
+            additionalCharge=data['additionalCharge'],
+            totalAmountAfterTax=data['grandTotal'],
+            ownerID_id=owner_id,
+        )
+        obj.save()
+        obj.invoiceNumber = "S"+str(Sales.objects.filter(ownerID_id=owner_id).count()).zfill(8)
+        obj.save()
+        splited_receive_item = data['datas'].split("@")
+        for item in splited_receive_item[:-1]:
+            item_details = item.split('|')
+
+            p = SaleProduct()
+            p.salesID_id = obj.pk
+            p.productID_id = item_details[0]
+            p.productName = item_details[1]
+            p.quantity = item_details[2]
+            p.unitPrice = item_details[3]
+            p.totalPrice = item_details[4]
+            p.totalAmountAfterTax = item_details[4]
+            p.remark = item_details[5]
+            p.unit= item_details[6]
+            p.ownerID_id = owner_id
+            p.save()
+
+        logger.info("Sales created successfully")
+        return SuccessResponse("Sales created successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while creating Sales: {e}")
+        return ErrorResponse("Unable to add new Sales. Please try again").to_json_response()

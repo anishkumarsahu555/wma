@@ -253,6 +253,9 @@ class SaleProduct(models.Model):
     ownerID = models.ForeignKey(Owner, on_delete=models.CASCADE,null=True, blank=True)
     productID = models.ForeignKey(Product, on_delete=models.CASCADE,null=True, blank=True)
     salesID = models.ForeignKey(Sales, on_delete=models.CASCADE, null=True, blank=True)
+    productName = models.CharField(max_length=100, blank=True, null=True)
+    unit = models.CharField(max_length=100, blank=True, null=True)
+    remark = models.TextField( blank=True, null=True)
     quantity = models.FloatField(default=0.00)
     unitPrice = models.FloatField(default=0.00)
     totalPrice = models.FloatField(default=0.00)
@@ -264,7 +267,7 @@ class SaleProduct(models.Model):
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
 
     def __str__(self):
-        return self.productID.name
+        return self.productID.productName
 
 
 class Payment(models.Model):

@@ -55,7 +55,7 @@ class OwnerAdmin(ImagePreviewMixin, ActiveDeletedMixin, admin.ModelAdmin):
     list_filter = ('isActive', 'isDeleted', 'startDate')
     readonly_fields = ('dateCreated', 'lastUpdatedOn', 'image_preview')
     fieldsets = (
-        ("Basic Info", {'fields': ('image_preview', 'profile_pic', 'name', 'username', 'password', 'email', 'phone', 'address')}),
+        ("Basic Info", {'fields': ('image_preview', 'profile_pic', 'name', 'username', 'password', 'email', 'phone', 'address','userID')}),
         ("Status", {'fields': ('isActive', 'isDeleted', 'startDate')}),
         ("Timestamps", {'fields': ('dateCreated', 'lastUpdatedOn'), 'classes': ('collapse',)}),
     )

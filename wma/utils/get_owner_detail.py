@@ -1,15 +1,20 @@
-from django.core.exceptions import ObjectDoesNotExist
 
 from wmaApp.models import Owner, StaffUser
 
-
 def get_owner_id(request):
     """Get the owner ID from either StaffUser or Owner model for the current user."""
-    try:
-        user_id = request.user.pk
-        try:
-            return StaffUser.objects.get(userID_id=user_id).ownerID.id
-        except ObjectDoesNotExist:
-            return Owner.objects.get(userID_id=user_id).id
-    except (ObjectDoesNotExist, AttributeError):
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
         return None
+
+    # First check if user is StaffUser
+    staff = StaffUser.objects.filter(userID=user).select_related("ownerID").first()
+    if staff and staff.ownerID:
+        return staff.ownerID_id  # Direct FK id
+
+    # Otherwise, check if user is Owner
+    owner = Owner.objects.filter(userID=user).first()
+    if owner:
+        return owner.id
+
+    return None

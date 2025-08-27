@@ -12,13 +12,15 @@ from .models import *
 
 def login_page(request):
     logger.info("Login page called")
+    if request.user.is_authenticated:
+        return redirect('wmaApp:dashboard')
     return render(request, 'wmaApp/login.html')
 
 
 def user_logout(request):
     logout(request)
     logger.info("User logged out")
-    return redirect("wmaApp:login_page")
+    return redirect("wmaApp:homepage")
 
 @csrf_exempt
 def post_login(request):
@@ -77,8 +79,6 @@ def manage_customer(request):
     return render(request, 'wmaApp/customer/manage_customer.html', context)
 
 
-
-
 def manage_supplier(request):
     return render(request, 'wmaApp/manage_supplier.html')
 
@@ -127,3 +127,7 @@ def manage_product(request):
     }
 
     return render(request, 'wmaApp/inventory/manage_products.html', context)
+
+def add_sale(request):
+    logger.info("Add sale called")
+    return render(request, 'wmaApp/sales/add_sales.html')

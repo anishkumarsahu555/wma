@@ -1,0 +1,746 @@
+{% extends 'wmaApp/baseIndex.html' %}
+{% load static %}
+{% block title %}
+<title>Add Sales</title>
+{% endblock %}
+{% block css %}
+{% endblock %}
+{% block body %}
+
+<style>
+
+    #UserTable_length {
+        left: 20px;
+        position: absolute;
+    }
+
+    #UserTable_filter {
+        width: 50%;
+        float: right;
+    }
+
+    .dt-buttons {
+        position: absolute;
+        left: 190px;
+    }
+    .dt-length{
+        position: absolute;
+    }
+
+    input[type=search] {
+        width: 100px !important;
+    }
+</style>
+
+
+<div class="ui aligned basic  grid">
+    <div class="sixteen wide column">
+        <div class="ui  pointing secondary menu">
+            <div style="cursor: pointer;" class="item active" data-tab="user"
+            >Add New Sale
+            </div>
+        </div>
+        <div class="ui tab " data-tab="user">
+
+            <div class="ui row teal stacked segment padded">
+                <div class="content">
+
+                    <form class="ui  small form " id="addForm">{% csrf_token %}
+                        <div class="two unstackable fields ">
+                            <div class="ten wide field required">
+                                <label>Customer Name</label>
+                                <select class="ui clearable search dropdown" id="customer">
+                                    <option value="">Search By Customer Name</option>
+                                </select>
+                            </div>
+                            <div class="six wide field required" >
+                                <label>Date</label>
+                                <div class="ui calendar" id="saleDate">
+                                    <div class="ui input left icon">
+                                        <input type="text" placeholder="Date" name="saleDateVal" id="saleDateVal">
+                                        <i class="calendar icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <h5 class="ui horizontal left aligned divider header green" style="margin: 0;">
+                            <i class="left align icon"></i>
+                            Add Product
+                        </h5>
+                        <div class="one fields"  >
+                            <div class="sixteen wide field required">
+                                <label>Product Name</label>
+                                <select class="ui clearable search dropdown" id="product">
+                                    <option value="">Search By Product Name</option>
+                                </select>
+                            </div>
+
+
+                        </div>
+                        <div class="two unstackable fields" >
+                            <div class="eight wide field required">
+                                <label>Quantity</label>
+                                <input type="number" name="quantity" id="quantity" placeholder="Quantity">
+                            </div>
+                            <div class="eight wide field required">
+                                <label>Rate(₹)</label>
+                                <input type="number" name="Rate" id="rate" placeholder="Rate">
+                            </div>
+
+                        </div>
+                        <div class="two unstackable fields ">
+                            <div class="ten wide  field ">
+                                <label>Remark</label>
+                                <textarea name="" id="remark" placeholder="Any Remark" rows="2"></textarea>
+                            </div>
+                            <div class="six wide  field ">
+                                <div class="ui mini buttons" style="padding: 2.5rem 0;">
+                                    <button class="ui positive button" id="addItemBtn" type="button"
+                                            onclick="addSubItems()">Add
+                                    </button>
+                                    <button style="display: none" type="button" id="updateItemBtn"
+                                            onclick="updateSubItems()" class="ui orange button">
+
+                                        Update
+                                    </button>
+                                    <div class="or"></div>
+                                    <button class="ui button red" type="button" onclick="ClearData()">
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+
+
+                        </div>
+                        <h5 class="ui horizontal left aligned divider header purple" style="margin: 2px;">
+                            <i class="left align icon"></i>
+                            Items and Total
+                        </h5>
+                        <div class="two fields ">
+
+                            <div class="eleven wide  field ">
+                                <div class="ui long scrolling container" style="margin-left: 0; margin-right: 0;">
+                                    <table class="ui red tiny last head foot stuck unstackable celled table" id="itemTable">
+                                        <thead>
+                                        <tr>
+                                            <th>Sl.no.</th>
+                                            <th>Name</th>
+                                            <th>Qty.</th>
+                                            <th>Rate(₹)</th>
+                                            <th>Unit</th>
+                                            <th>SubTotal(₹)</th>
+                                            <th>Remark</th>
+                                            <th>action</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="five wide  field ">
+                                <div class="ui  middle aligned divided list">
+                                    <div class="item ">
+                                        <div class="right floated content">
+                                            <div class="ui tag large purple label">
+                                                <i class="rupee sign icon"></i> <span id="subTotal">0.00</span>
+                                            </div>
+                                        </div>
+                                        <div class="content">
+                                            <span class="ui text large"> Sub Total:</span>
+
+                                        </div>
+                                    </div>
+                                    <div class="item">
+                                        <div class="right floated content">
+                                            <div class="ui tag large purple label">
+                                                <i class="rupee sign icon"></i> <span id="totalTax">0.00</span>
+                                            </div>
+                                        </div>
+                                        <div class="content">
+
+                                            <span class="ui text large"> Tax:</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="item">
+                                        <div class="right floated content">
+                                            <div class="ui tag large teal label">
+                                                <i class="rupee sign icon"></i> <span style="padding: 5px;" contenteditable="true" id="additionalCharge">0.00</span>
+                                            </div>
+                                        </div>
+                                        <div class="content">
+
+                                            <span class="ui text large"> Additional Charge:</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="item">
+                                        <div class="right floated content">
+                                            <div class="ui tag large purple label">
+                                                <i class="rupee sign icon"></i> <span id="grandTotal" >0.00</span>
+                                            </div>
+                                        </div>
+                                        <div class="content">
+
+                                            <span class="ui text large"> Total:</span>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                        <input type="hidden" id="productID">
+                        <input type="hidden" id="productName">
+                        <input type="hidden" id="productUnit">
+
+
+                    </form>
+                </div>
+
+                <div class="ui  aligned basic  grid">
+                    <div class="row" style="padding-left: 5px;padding-right: 5px">
+                        <div class="16 wide column center aligned">
+                            <button onclick="addDetail()" id="" class="ui green right labeled icon button saveBtn">
+                                Submit
+                                <i class="checkmark icon"></i>
+                            </button>
+                            <button id="" style="display: none;" class="ui teal double right labeled icon loading button saveBtnLoad">
+                                Saving ....
+                                <i class="checkmark icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+
+        </div>
+    </div>
+
+
+</div>
+
+<div class="ui basic modal custom" id="delItemModal">
+    <div class="ui icon header">
+        <i class="archive icon"></i>
+        Item will be Deleted.
+    </div>
+    <div class="content">
+        <p style="text-align: center">The Item detail will be deleted, are you sure to delete
+            this Item?</p>
+    </div>
+    <div class="actions">
+        <div class="ui red basic cancel inverted button">
+            <i class="remove icon"></i>
+            No
+        </div>
+        <input type="hidden" id="itemDelID">
+        <div class="ui green ok inverted button" onclick="deleteItem()">
+            <i class="checkmark icon"></i>
+            Yes
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block js %}
+<script>
+    var today = new Date();
+    $('#saleDate')
+        .calendar({
+                initialDate: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
+                monthFirst: false,
+                type: 'date',
+                formatter: {
+                    date: function (date, settings) {
+
+                        if (!date) return '';
+                        var day = String(date.getDate());
+                        var month = String(date.getMonth() + 1);
+                        var year = date.getFullYear();
+                        return day + '/' + month + '/' + year;
+                    }
+                }
+            }
+        );
+
+    var userTab;
+
+
+    function showUserModal() {
+        $('#myModalUser').modal('show');
+        myOwnReset();
+    }
+
+
+
+
+    $(document).ready(function(){
+        $('.ui.form')
+            .form({
+                fields: {
+                    fileInput:{
+                        identifier: 'name',
+                        rules: [
+                            {
+                                type : 'empty'
+                            }
+                        ]
+                    }
+                }
+            });
+    });
+
+    function myOwnReset(){
+        $('.ui.form').form('reset');
+    }
+
+
+    $(getCustomerList());
+
+
+    function getCustomerList() {
+        $.ajax({
+            type: 'get',
+            url: "{% url 'wma_api_cached:customer_list_api_cached' %}",
+
+            success: function (response) {
+                console.log(response);
+
+                $('#customer').html('');
+                $('#customer').append(' <option value="">Search By Customer Name</option>');
+                var j;
+                for (j = 0; j < response.data.length; j++) {
+
+                    $('#customer').append('<option value="' + response.data[j]['ID'] + '" >' + response.data[j]['DisplayDetail'] + '</option>');
+
+                }
+
+            },
+
+            error: function () {
+                $('body')
+                    .toast({
+                        class: 'error',
+                        message: 'An error occurred !'
+                    })
+                ;
+            }
+        });
+
+
+    }
+
+
+    $(getProductList());
+
+
+    function getProductList() {
+        $.ajax({
+            type: 'get',
+            url: "{% url 'wma_api_cached:product_list_api_cached' %}",
+
+            success: function (response) {
+                console.log(response);
+
+                $('#product').html('');
+                $('#product').append(' <option value="">Search By Customer Name</option>');
+                var j;
+                for (j = 0; j < response.data.length; j++) {
+
+                    $('#product').append('<option value="' + response.data[j]['ID'] + '" >' + response.data[j]['DisplayDetail'] + '</option>');
+
+                }
+
+                localStorage.setItem('productList', JSON.stringify(response.data));
+
+
+            },
+
+            error: function () {
+                $('body')
+                    .toast({
+                        class: 'error',
+                        message: 'An error occurred !'
+                    })
+                ;
+            }
+        });
+
+
+    }
+
+    function addSubItems() {
+        var product = $('#product').val();
+        var quantity = $('#quantity').val();
+        var rate = $('#rate').val();
+        var productName = $('#productName').val();
+        var remark = $('#remark').val();
+        var productUnit = $('#productUnit').val();
+        var subtotal = parseFloat(parseFloat(quantity) * parseFloat(rate)).toFixed(2);
+
+        if (product === '' || quantity === '' || rate === '') {
+            $('body').toast({
+                class: 'orange',
+                message: 'Product, Quantity, and Rate are required!'
+            });
+            return; // Exit the function if validation fails
+        }
+
+        var existingRow = $('#itemTable tr[id="' + product + '"]');
+
+        if (existingRow.length > 0) {
+            // Update existing row
+            $('#itemQuantity' + product).html(quantity);
+            $('#itemRate' + product).html(rate);
+            $('#itemUnit' + product).html(productUnit);
+            $('#itemTotal' + product).html(subtotal);
+            $('#itemRemark' + product).html(remark);
+
+            $('body').toast({
+                class: 'success',
+                message: 'Product quantity and total updated!'
+            });
+        } else {
+            // Add new row
+            var lastItemID = $('#itemTable tr:last').attr('id');
+            var newRow = '';
+
+            if (lastItemID === undefined) {
+                newRow = '<tr id="' + product + '">' +
+                    '<td id="row' + product + '"># <input type="hidden" id="itemProductID' + product + '" value="' + product + '"></td>' +
+                    '<td id="itemProduct' + product + '">' + productName + '</td>' +
+                    '<td id="itemQuantity' + product + '">' + quantity + '</td>' +
+                    '<td id="itemRate' + product + '">' + rate + '</td>' +
+                    '<td id="itemUnit' + product + '">' + productUnit + '</td>' +
+                    '<td id="itemTotal' + product + '">' + subtotal + '</td>' +
+                    '<td id="itemRemark' + product + '">' + (remark || '') + '</td>' +
+                    '<td style="display: flex">' +
+                    '<button type="button" style="font-size:8px;" onclick="GetItemDetail(\'' + product + '\')" class="ui circular facebook icon button green">' +
+                    '<i class="pen icon"></i></button>' +
+                    '<button type="button" style="font-size:8px;" onclick="delItem(\'' + product + '\')" class="ui circular youtube icon button">' +
+                    '<i class="trash alternate icon"></i></button>' +
+                    '</td></tr>';
+            } else {
+                newRow = '<tr id="' + product + '">' +
+                    '<td id="row' + product + '"># <input type="hidden" id="itemProductID' + product + '" value="' + product + '"></td>' +
+                    '<td id="itemProduct' + product + '">' + productName + '</td>' +
+                    '<td id="itemQuantity' + product + '">' + quantity + '</td>' +
+                    '<td id="itemRate' + product + '">' + rate + '</td>' +
+                    '<td id="itemUnit' + product + '">' + productUnit + '</td>' +
+                    '<td id="itemTotal' + product + '">' + subtotal + '</td>' +
+                    '<td id="itemRemark' + product + '">' + (remark || '') + '</td>' +
+                    '<td style="display: flex">' +
+                    '<button type="button" style="font-size:8px;" onclick="GetItemDetail(\'' + product + '\')" class="ui circular facebook icon button green">' +
+                    '<i class="pen icon"></i></button>' +
+                    '<button type="button" style="font-size:8px;" onclick="delItem(\'' + product + '\')" class="ui circular youtube icon button">' +
+                    '<i class="trash alternate icon"></i></button>' +
+                    '</td></tr>';
+            }
+
+            $('#itemTable tbody').append(newRow);
+            $('body').toast({
+                class: 'success',
+                message: 'Product added to list!'
+            });
+        }
+
+        ClearData();
+        calTaxAndTotal();
+        updateRowNumbers()
+    }
+    // Add this new function to update all row numbers
+    function updateRowNumbers() {
+        $('#itemTable tbody tr').each(function(index) {
+            var productId = $(this).attr('id');
+            var $rowNumberCell = $('#row' + productId);
+            $rowNumberCell.html((index + 1) + ' <input type="hidden" id="itemProductID' + productId + '" value="' + productId + '">');
+        });
+    }
+    function delItem(id) {
+        $('#delItemModal')
+            .modal('show')
+        ;
+        $('#itemDelID').val(id)
+    }
+
+    function deleteItem() {
+        var id = $('#itemDelID').val();
+        $('#' + id).remove();
+        calTaxAndTotal();
+        updateRowNumbers()
+
+
+    }
+    function ClearData() {
+        $('#addItemBtn').css('display', '');
+        $('#updateItemBtn').css('display', 'none');
+        $('#product').dropdown('clear');  // This will clear the Semantic UI dropdown state
+        $('#quantity').val('');
+        $('#rate').val('');
+        $('#remark').val('');
+        $('#productName').val('');
+        $('#productUnit').val('');
+        $('#productID').val('');
+    }
+
+    function GetItemDetail(id) {
+        $('#addItemBtn').css('display', 'none');
+        $('#updateItemBtn').css('display', '');
+        var product = $('#itemProductID' + id).val();
+        var quantity = $('#itemQuantity' + id).html();
+        var itemRate = $('#itemRate' + id).html();
+        var remark = $('#itemRemark' + id).html();
+
+        $('#product').val(product).change();
+        $('#quantity').val(quantity);
+        $('#remark').val(remark);
+        $('#rate').val(itemRate);
+    }
+
+
+    function updateSubItems() {
+        var id = $('#product').val();
+        var product = $('#productName').val();
+        var quantity = $('#quantity').val();
+        var rate = $('#rate').val();
+        var remark = $('#remark').val();
+        var unit = $('#productUnit').val();
+
+
+        if (product === '' || quantity === '' || rate === '' ) {
+            $('body')
+                .toast({
+                    class: 'orange',
+                    message: 'Product, Quantity and Total are required !'
+                })
+            ;
+        }
+        else {
+            var subtotal = parseFloat(parseFloat(quantity) * parseFloat(rate)).toFixed(2);
+            $('#itemProduct' + id).html(product);
+            $('#itemQuantity' + id).html(quantity);
+            $('#itemRate' + id).html(rate);
+            $('#itemTotal' + id).html(subtotal);
+            $('#itemRemark' + id).html(remark);
+            $('#itemUnit' + id).html(unit);
+            $('#itemProductID' + id).val(id);
+
+
+            ClearData();
+            calTaxAndTotal();
+        }
+
+    }
+
+    function calTaxAndTotal() {
+        var grand_total = 0.0;
+        var sub_total = 0.0;
+        $('#itemTable tbody tr').each(function () {
+            var id = $(this).closest('tr').attr('id');
+            var itemQuantity = $('#itemQuantity' + id).html();
+            var itemRate = $('#itemRate' + id).html();
+            sub_total = sub_total + parseFloat(itemQuantity) * parseFloat(itemRate);
+        });
+        var additionalCharge = parseFloat($('#additionalCharge').html());
+        console.log(additionalCharge);
+
+        $('#subTotal').html(parseFloat(sub_total).toFixed(2));
+        grand_total = sub_total + additionalCharge;
+        $('#grandTotal').html(parseFloat(grand_total).toFixed(2));
+
+    }
+
+    $(document).ready(function() {
+        // Initialize the dropdown
+        $('.ui.dropdown').dropdown();
+
+        // Add change handler for product dropdown
+        $('#product').on('change', function() {
+            const productId = $(this).val();
+            if (productId) {
+                // Get the product list from localStorage
+                const storedProducts = JSON.parse(localStorage.getItem('productList')) || [];
+                // Find the selected product by ID
+                const selectedProduct = storedProducts.find(product => product.ID == productId);
+
+                if (selectedProduct) {
+                    console.log('Selected product:', selectedProduct);
+                    $('#productID').val(selectedProduct.ID);
+                    $('#productName').val(selectedProduct.Name);
+                    $('#productUnit').val(selectedProduct.Unit);
+
+
+                }
+            } else {
+                // Clear fields if no product is selected
+
+            }
+        });
+
+        $('#additionalCharge').on('input', function() {
+            // Remove any non-numeric characters except decimal point
+            let value = $(this).text().replace(/[^0-9.]/g, '');
+
+            // Ensure only one decimal point
+            const decimalCount = (value.match(/\./g) || []).length;
+            if (decimalCount > 1) {
+                const parts = value.split('.');
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+
+        });
+
+        // Handle blur to ensure proper format
+        $('#additionalCharge').on('blur', function() {
+            let value = parseFloat($(this).text());
+            if (isNaN(value)) {
+                value = 0;
+            }
+            $(this).text(value.toFixed(2));
+            calTaxAndTotal();
+        });
+    });
+
+
+    function addDetail() {
+        showLoading();
+        var customer = $('#customer').val();
+        var saleDateVal = $('#saleDateVal').val();
+
+        var grandTotal = $('#grandTotal').html();
+        var additionalCharge = $('#additionalCharge').html();
+        var tax = $('#totalTax').html();
+        var subTotal = $('#subTotal').html();
+
+        var datas = '';
+        $('#itemTable tbody tr').each(function () {
+            var id = $(this).closest('tr').attr('id');
+            var itemName = $('#itemProduct' + id).html();
+            var quantity = $('#itemQuantity' + id).html();
+            var itemRate = $('#itemRate' + id).html();
+            var itemTotal = $('#itemTotal' + id).html();
+            var itemRemark = $('#itemRemark' + id).html();
+            var itemUnit = $('#itemUnit' + id).html();
+            var itemProductID = $('#itemProductID' + id).val();
+
+            datas = datas + '' + id + '|' + itemName + '|' + quantity + '|' + itemRate + '|' + itemTotal + '|' + itemRemark + '|' + itemUnit + '|' + itemProductID + '@'
+
+
+
+
+
+
+        });
+        if (customer === '' || saleDateVal === '' || grandTotal === '' || additionalCharge === '' || subTotal === '' || tax === ''|| datas === '') {
+            $('body')
+                .toast({
+                    class: 'orange',
+                    message: 'Customer, Sale Date and Item Detail are required !'
+                })
+            ;
+            hideLoading();
+            return false;
+        }
+        debugger
+        var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
+
+        data = new FormData();
+        data.append('customer', customer);
+        data.append('saleDate', saleDateVal);
+
+        data.append('grandTotal', grandTotal);
+        data.append('additionalCharge', additionalCharge);
+        data.append('tax', tax);
+        data.append('datas', datas);
+        data.append('subTotal', subTotal);
+
+        data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
+
+        $.ajax({
+            type: 'post',
+            url: "{% url 'wma_api:add_sales_api' %}",
+            data: data,
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function (response) {
+                console.log(response);
+                if (response.success) {
+                    $('body')
+                        .toast({
+                            class: 'success',
+                            message:response.message
+                        })
+                    ;
+
+
+                    $('#addForm').trigger('reset');
+                    $('#myModalUser').modal('toggle');
+
+                    setTimeout(function() {
+                        location.reload();
+                        hideLoading();
+                    }, 1000);
+                } else {
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: response.message
+                        })
+                    ;
+                    hideLoading();
+
+                }
+
+                return response;
+            },
+            error: function (xhr, status, error) {
+                response = JSON.parse(xhr.responseText);
+
+                if(!response.success){
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: response.message
+                        })
+                    ;
+                    hideLoading();
+                }
+                else{
+                    $('body')
+                        .toast({
+                            class: 'error',
+                            message: 'An error occurred !'
+                        })
+                    ;
+                    hideLoading();
+                }
+
+
+            }
+        });
+
+
+    }
+
+
+
+
+
+</script>
+
+{% endblock %}

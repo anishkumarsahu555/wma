@@ -24,4 +24,5 @@ urlpatterns = [
     path('manage_unit/', views.manage_unit, name='manage_unit'),
     path('manage_hsn_and_tax/', views.manage_hsn_and_tax, name='manage_hsn_and_tax'),
     path('manage_product/', views.manage_product, name='manage_product'),
+    path('add_sale/', views.add_sale, name='add_sale'),
 ]

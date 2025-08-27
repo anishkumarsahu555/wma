@@ -60,4 +60,7 @@ urlpatterns = [
     path('delete_product_api/', delete_product_api, name='delete_product_api'),
     path('get_product_detail/', get_product_detail, name='get_product_detail'),
     path('update_product_api/', update_product_api, name='update_product_api'),
+
+    # Sales api urls
+    path('add_sales_api/', add_sales_api, name='add_sales_api')
 ]
