@@ -1649,3 +1649,160 @@ def update_sales_api(request):
     except Exception as e:
         logger.error(f"Error while updated Sales: {e}")
         return ErrorResponse("Unable to update Sales. Please try again").to_json_response()
+
+
+
+# ---------------------------- Manage Expense api ---------------------------
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['expense_type', 'amount', 'description' ])
+@transaction.atomic
+def add_expense_api(request):
+    data = request.POST.dict()
+    try:
+        obj = Expense(
+            groupID_id=data['expense_type'],
+            expenseAmount=data['amount'],
+            expenseDescription=data['description'],
+            expenseDate = datetime.today().date(),
+            ownerID_id=get_owner_id(request),
+        )
+        obj.save()
+        logger.info("Expense added successfully")
+        return SuccessResponse("Expense added successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while adding expense: {e}")
+        return ErrorResponse("Unable to add new expense. Please try again").to_json_response()
+
+
+class ExpenseListJson(BaseDatatableView):
+    order_columns = [ 'groupID','expenseAmount' ,'expenseDescription' , 'expenseDate' , 'dateCreated']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        return Expense.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(self.request))
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(groupID__name__icontains=search)
+                |Q(expenseAmount__icontains=search)
+                |Q(expenseDescription__icontains=search) |Q(expenseDate__icontains=search)
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </button>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+
+            json_data.append([
+                escape(item.groupID.name),
+                escape(item.expenseAmount),
+                escape(item.expenseDescription),
+                escape(item.expenseDate.strftime('%d-%m-%Y %I:%M %p')),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+            ])
+
+        return json_data
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_expense_api(request):
+
+    obj_id = request.POST.get("id")
+    try:
+        try:
+            obj = Expense.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+        except Expense.DoesNotExist:
+            logger.error(f"Expense not found")
+            return ErrorResponse("Expense not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.save()
+
+        logger.info("Expense deleted successfully")
+        return SuccessResponse("Expense deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting Expense : {e}")
+        return ErrorResponse(str(e), status_code=500).to_json_response()
+
+
+
+@require_http_methods(["GET"])
+@validate_input(['id'])
+def get_expense_detail(request):
+    try:
+        obj_id = request.GET.get('id')
+        # Get single staff user
+        try:
+            obj = Expense.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+            data = {
+                'id': obj.id,
+                'groupID': obj.groupID.id,
+                'expenseAmount': obj.expenseAmount,
+                'expenseDescription': obj.expenseDescription,
+                'expenseDate': obj.expenseDate,
+
+            }
+            logger.info("Expense fetched successfully")
+            return SuccessResponse("Expense Group fetched successfully", data=data).to_json_response()
+        except Expense.DoesNotExist:
+            logger.error(f"Expense with ID '{obj_id}' not found")
+            return ErrorResponse("Expense not found", status_code=404).to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while fetching Expense Group: {e}")
+        return ErrorResponse( 'Unable to fetch expense group. Please try again', status_code=500).to_json_response()
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['id','expense_type', 'amount', 'description'  ])
+@transaction.atomic
+def update_expense_api(request):
+    data = request.POST.dict()
+    try:
+        try:
+            obj = Expense.objects.get(
+                id=data['id'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+            )
+        except Expense.DoesNotExist:
+            logger.error(f"Expense  with ID {data["id"]}' not found")
+            return ErrorResponse("Expense not found", status_code=404).to_json_response()
+
+        obj.groupID_id = data['expense_type']
+        obj.expenseAmount = data['amount']
+        obj.expenseDescription = data['description']
+        obj.save()
+
+        logger.info(f"Expense '{data['id']}' updated successfully")
+        return SuccessResponse("Expense updated successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while updating expense: {str(e)}")
+        return ErrorResponse("Unable to update expense. Please try again", status_code=500).to_json_response()

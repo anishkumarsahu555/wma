@@ -66,4 +66,12 @@ urlpatterns = [
     path('SalesListJson/', SalesListJson.as_view(), name='SalesListJson'),
     path('delete_sales_api/', delete_sales_api, name='delete_sales_api'),
     path('update_sales_api/', update_sales_api, name='update_sales_api'),
+
+    # Expense api urls
+    path('add_expense_api/', add_expense_api, name='add_expense_api'),
+    path('ExpenseListJson/', ExpenseListJson.as_view(), name='ExpenseListJson'),
+    path('delete_expense_api/', delete_expense_api, name='delete_expense_api'),
+    path('get_expense_detail/', get_expense_detail, name='get_expense_detail'),
+    path('update_expense_api/', update_expense_api, name='update_expense_api'),
+
 ]

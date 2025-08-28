@@ -150,3 +150,12 @@ def edit_sale(request, id=None):
         'products': products
     }
     return render(request, 'wmaApp/sales/edit_sales.html', context)
+
+def manage_expense(request):
+    logger.info("Manage expense called")
+    instances = ExpenseGroup.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request))
+    context = {
+        'instances': instances
+    }
+
+    return render(request, 'wmaApp/expenditure/manage_expenditure.html', context)

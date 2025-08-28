@@ -30,10 +30,22 @@ class UserGroup(models.Model):
     def __str__(self):
         return self.name
 
+class Location(models.Model):
+    ownerID = models.ForeignKey(Owner, on_delete=models.CASCADE,null=True, blank=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    isDeleted = models.BooleanField(default=False)
+    dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
+    lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+
 class StaffUser(models.Model):
     ownerID = models.ForeignKey(Owner, on_delete=models.CASCADE,null=True, blank=True)
     groupID = models.ForeignKey(UserGroup, on_delete=models.CASCADE,null=True, blank=True)
     userID = models.OneToOneField(User, on_delete=models.CASCADE,null=True, blank=True)
+    locationID = models.ForeignKey(Location, on_delete=models.CASCADE,null=True, blank=True)
     profile_pic = StdImageField(upload_to='staff_pics', variations={'thumb': (128, 128)}, null=True, blank=True)
     name = models.CharField(max_length=100, blank=True, null=True)
     username = models.CharField(max_length=100, blank=True, null=True)
@@ -74,15 +86,6 @@ class Expense(models.Model):
     def __str__(self):
         return self.expenseDescription
 
-class Location(models.Model):
-    ownerID = models.ForeignKey(Owner, on_delete=models.CASCADE,null=True, blank=True)
-    name = models.CharField(max_length=100, blank=True, null=True)
-    isDeleted = models.BooleanField(default=False)
-    dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
-    lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
-
-    def __str__(self):
-        return self.name
 
 class Customer(models.Model):
     ownerID = models.ForeignKey(Owner, on_delete=models.CASCADE,null=True, blank=True)
