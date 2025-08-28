@@ -1465,8 +1465,6 @@ def update_product_api(request):
 @transaction.atomic
 def add_sales_api(request):
     data = request.POST.dict()
-    print(data)
-
     try:
         owner_id = get_owner_id(request)
         obj = Sales(
@@ -1503,3 +1501,151 @@ def add_sales_api(request):
     except Exception as e:
         logger.error(f"Error while creating Sales: {e}")
         return ErrorResponse("Unable to add new Sales. Please try again").to_json_response()
+
+
+class SalesListJson(BaseDatatableView):
+    order_columns = [ 'invoiceNumber','saleDate','customerID', 'totalAmount','totalTax', 'additionalCharge', 'totalAmountAfterTax', 'addedByID','dateCreated']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        owner_id = get_owner_id(self.request)
+        try:
+            startDateV = self.request.GET.get("startDate")
+            endDateV = self.request.GET.get("endDate")
+            staffID = self.request.GET.get("staffID")
+            sDate = datetime.strptime(startDateV, '%d/%m/%Y')
+            eDate = datetime.strptime(endDateV, '%d/%m/%Y')
+            if staffID == 'All':
+                return Sales.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id,saleDate__range=[sDate.date(), eDate.date()])
+            else:
+                return Sales.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, saleDate__range=[sDate.date(), eDate.date()],
+                                                             addedBy_id=int(staffID))
+
+
+        except:
+            return Sales.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, saleDate__icontains=datetime.today().date())
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(invoiceNumber__icontains=search)
+                |Q(saleDate__icontains=search)
+                |Q(customerID__name__icontains=search)
+                |Q(customerID__locationID__name__icontains=search)
+                |Q(totalAmount__icontains=search)
+                |Q(totalTax__icontains=search)
+                |Q(additionalCharge__icontains=search)
+                |Q(totalAmountAfterTax__icontains=search)
+                |Q(addedByID__name__icontains=search)
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<a href="/edit_sale/{}/" data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </a>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+
+            json_data.append([
+                escape(item.invoiceNumber),
+                escape(item.saleDate.strftime('%d-%m-%Y')),
+                escape(item.customerID.name) + ' - ' + escape(item.customerID.locationID.name),
+                escape(item.totalAmount),
+                escape(item.totalTax),
+                escape(item.additionalCharge),
+                escape(item.totalAmountAfterTax),
+                escape(item.addedByID.name if item.addedByID else ''),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+                ])
+        return json_data
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_sales_api(request):
+    owner_id = get_owner_id(request)
+    obj_id = request.POST.get("id")
+    try:
+        try:
+            obj = Sales.objects.get(id=obj_id, isDeleted=False, ownerID_id=owner_id)
+        except Sales.DoesNotExist:
+            logger.error(f"Sales not found")
+            return ErrorResponse("Sales not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.save()
+        logger.info("Sales deleted successfully")
+        return SuccessResponse("Sales deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting Sales: {e}")
+        return ErrorResponse("Error while deleting Sales", status_code=500).to_json_response()
+
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['customer', 'saleDate', 'grandTotal', 'additionalCharge', 'tax', 'datas', 'subTotal', 'id'])
+@transaction.atomic
+def update_sales_api(request):
+    data = request.POST.dict()
+
+    try:
+        owner_id = get_owner_id(request)
+        obj = Sales.objects.get(pk=data['id'], ownerID_id=owner_id, isDeleted=False)
+        obj.customerID_id = data['customer']
+        obj.saleDate = datetime.strptime(data['saleDate'], '%d/%m/%Y')
+        obj.totalAmount = data['subTotal']
+        obj.totalTax = data['tax']
+        obj.additionalCharge = data['additionalCharge']
+        obj.totalAmountAfterTax = data['grandTotal']
+        obj.save()
+        obj.invoiceNumber = "S"+str(Sales.objects.filter(ownerID_id=owner_id).count()).zfill(8)
+        obj.save()
+        splited_receive_item = data['datas'].split("@")
+        old_items = SaleProduct.objects.filter(salesID_id=data['id'])
+        for o in old_items:
+            o.isDeleted = True
+            o.save()
+
+        for item in splited_receive_item[:-1]:
+            item_details = item.split('|')
+
+            p = SaleProduct()
+            p.salesID_id = obj.pk
+            p.productID_id = item_details[0]
+            p.productName = item_details[1]
+            p.quantity = item_details[2]
+            p.unitPrice = item_details[3]
+            p.totalPrice = item_details[4]
+            p.totalAmountAfterTax = item_details[4]
+            p.remark = item_details[5]
+            p.unit= item_details[6]
+            p.ownerID_id = owner_id
+            p.save()
+
+        logger.info("Sales updated successfully")
+        return SuccessResponse("Sales updated successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while updated Sales: {e}")
+        return ErrorResponse("Unable to update Sales. Please try again").to_json_response()

@@ -1,6 +1,6 @@
 from django.contrib.auth import logout, authenticate, login
 from django.http import JsonResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
 from utils.get_owner_detail import get_owner_id
@@ -131,3 +131,22 @@ def manage_product(request):
 def add_sale(request):
     logger.info("Add sale called")
     return render(request, 'wmaApp/sales/add_sales.html')
+
+def sales_list(request):
+    logger.info("Sales list called")
+    staffs = StaffUser.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request))
+    context = {
+        'staffs': staffs
+    }
+    return render(request, 'wmaApp/sales/sales_list.html', context)
+
+def edit_sale(request, id=None):
+    logger.info("Edit sale called")
+    object = get_object_or_404(Sales, pk=id, isDeleted=False, ownerID_id=get_owner_id(request))
+    products = SaleProduct.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request), salesID_id =object.id )
+
+    context = {
+        'object': object,
+        'products': products
+    }
+    return render(request, 'wmaApp/sales/edit_sales.html', context)

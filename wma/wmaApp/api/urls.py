@@ -62,5 +62,8 @@ urlpatterns = [
     path('update_product_api/', update_product_api, name='update_product_api'),
 
     # Sales api urls
-    path('add_sales_api/', add_sales_api, name='add_sales_api')
+    path('add_sales_api/', add_sales_api, name='add_sales_api'),
+    path('SalesListJson/', SalesListJson.as_view(), name='SalesListJson'),
+    path('delete_sales_api/', delete_sales_api, name='delete_sales_api'),
+    path('update_sales_api/', update_sales_api, name='update_sales_api'),
 ]
