@@ -74,4 +74,11 @@ urlpatterns = [
     path('get_expense_detail/', get_expense_detail, name='get_expense_detail'),
     path('update_expense_api/', update_expense_api, name='update_expense_api'),
 
+    # Jar Counter api urls
+    path('add_jar_api/', add_jar_api, name='add_jar_api'),
+    path('JarListJson/', JarListJson.as_view(), name='JarListJson'),
+    path('delete_jar_api/', delete_jar_api, name='delete_jar_api'),
+    path('get_jar_detail/', get_jar_detail, name='get_jar_detail'),
+    path('update_jar_api/', update_jar_api, name='update_jar_api'),
+
 ]

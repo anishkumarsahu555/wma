@@ -330,6 +330,7 @@ class JarCounter(models.Model):
     customerID = models.ForeignKey(Customer, on_delete=models.CASCADE,null=True, blank=True)
     inJar = models.FloatField(default=0.00)
     outJar = models.FloatField(default=0.00)
+    remark = models.TextField( blank=True, null=True)
     date = models.DateField(blank=True, null=True)
     addedByID = models.ForeignKey(StaffUser, on_delete=models.CASCADE, null=True, blank=True)
     isDeleted = models.BooleanField(default=False)

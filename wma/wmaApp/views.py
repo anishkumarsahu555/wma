@@ -159,3 +159,7 @@ def manage_expense(request):
     }
 
     return render(request, 'wmaApp/expenditure/manage_expenditure.html', context)
+
+def manage_jars(request):
+    logger.info("Manage jars is called")
+    return render(request, 'wmaApp/jars/manage_jars.html',)

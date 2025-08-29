@@ -5,7 +5,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0,  user-scalable=0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     {% block title %}
         <title>WMA</title>
@@ -33,6 +33,12 @@
     <style>
         html {
             scroll-behavior: smooth;
+        }
+        html, body {
+            -ms-text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
+            -moz-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }
 
         .sidenav {
@@ -244,6 +250,17 @@
 
             </div>
         </div>
+    <div class="item">
+        <div class="header">
+            Manage Jars
+        </div>
+        <div class="menu">
+            <a class="item" href="{% url 'wmaApp:manage_jars' %}">
+                <div><i class="truck icon"></i>Jar Counter</div>
+            </a>
+
+        </div>
+    </div>
         <div class="item">
             <div class="header">
                 Profile

@@ -28,4 +28,5 @@ urlpatterns = [
     path('manage_sale/', views.sales_list, name='manage_sale'),
     path('edit_sale/<int:id>/', views.edit_sale, name='edit_sale'),
     path('manage_expense/', views.manage_expense, name='manage_expense'),
+    path('manage_jars/', views.manage_jars, name='manage_jars'),
 ]

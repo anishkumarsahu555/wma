@@ -1806,3 +1806,179 @@ def update_expense_api(request):
     except Exception as e:
         logger.error(f"Error while updating expense: {str(e)}")
         return ErrorResponse("Unable to update expense. Please try again", status_code=500).to_json_response()
+
+
+# ---------------------------- Manage Expense api ---------------------------
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['customer', 'jar_in','jar_out', 'remark' ])
+@transaction.atomic
+def add_jar_api(request):
+    data = request.POST.dict()
+    try:
+        obj = JarCounter(
+            customerID_id=data['customer'],
+            inJar=data['jar_in'],
+            outJar=data['jar_out'],
+            remark=data['remark'],
+            date = datetime.today().date(),
+            ownerID_id=get_owner_id(request),
+        )
+        obj.save()
+        logger.info("Jar record added successfully")
+        return SuccessResponse("Jar record added successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while adding Jar record: {e}")
+        return ErrorResponse("Unable to add new Jar record. Please try again").to_json_response()
+
+
+class JarListJson(BaseDatatableView):
+    order_columns = [ 'customerID','inJar' ,'outJar' ,'remark' , 'date' , 'dateCreated']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        owner_id = get_owner_id(self.request)
+        try:
+            startDateV = self.request.GET.get("startDate")
+            endDateV = self.request.GET.get("endDate")
+            staffID = self.request.GET.get("staffID")
+            sDate = datetime.strptime(startDateV, '%d/%m/%Y')
+            eDate = datetime.strptime(endDateV, '%d/%m/%Y')
+            if staffID == 'All':
+                return JarCounter.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id,date__range=[sDate.date(), eDate.date()])
+            else:
+                return JarCounter.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, date__range=[sDate.date(), eDate.date()],
+                                                             addedBy_id=int(staffID))
+
+
+        except:
+            return JarCounter.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, date__icontains=datetime.today().date())
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(customerID__name__icontains=search)
+                |Q(inJar__icontains=search)    |Q(outJar__icontains=search)
+                |Q(date__icontains=search)
+                |Q(remark__icontains=search) |Q(customerID__locationID__name__icontains=search)
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </button>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+
+            json_data.append([
+                escape(item.customerID.name) + ' - ' + escape(item.customerID.locationID.name),
+                escape(int(item.inJar)),
+                escape( int(item.outJar)),
+                escape(item.remark),
+                escape(item.date.strftime('%d-%m-%Y')),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+            ])
+
+        return json_data
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_jar_api(request):
+
+    obj_id = request.POST.get("id")
+    try:
+        try:
+            obj = JarCounter.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+        except JarCounter.DoesNotExist:
+            logger.error(f"Jar entry not found")
+            return ErrorResponse("Jar entry not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.save()
+
+        logger.info("Jar entry deleted successfully")
+        return SuccessResponse("Jar entry deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting Jar entry : {e}")
+        return ErrorResponse(str(e), status_code=500).to_json_response()
+
+
+
+@require_http_methods(["GET"])
+@validate_input(['id'])
+def get_jar_detail(request):
+    try:
+        obj_id = request.GET.get('id')
+        # Get single staff user
+        try:
+            obj = JarCounter.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+            data = {
+                'id': obj.id,
+                'customerID': obj.customerID_id,
+                'inJar': obj.inJar,
+                'outJar': obj.outJar,
+                'remark': obj.remark,
+                'date': obj.date,
+
+            }
+            logger.info("Jar entry fetched successfully")
+            return SuccessResponse("Jar entry fetched successfully", data=data).to_json_response()
+        except JarCounter.DoesNotExist:
+            logger.error(f"Jar entry with ID '{obj_id}' not found")
+            return ErrorResponse("Jar entry not found", status_code=404).to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while fetching Jar entry: {e}")
+        return ErrorResponse( 'Unable to fetch Jar entry. Please try again', status_code=500).to_json_response()
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['id','customer', 'jar_in','jar_out', 'remark' ])
+@transaction.atomic
+def update_jar_api(request):
+    data = request.POST.dict()
+    try:
+        try:
+            obj = JarCounter.objects.get(
+                id=data['id'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+            )
+        except JarCounter.DoesNotExist:
+            logger.error(f"Expense  with ID {data["id"]}' not found")
+            return ErrorResponse("Expense not found", status_code=404).to_json_response()
+
+        obj.customerID_id = data['customer']
+        obj.inJar = data['jar_in']
+        obj.outJar = data['jar_out']
+        obj.remark = data['remark']
+        obj.save()
+
+        logger.info(f"Jar entry '{data['id']}' updated successfully")
+        return SuccessResponse("Jar entry updated successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while updating Jar entry: {str(e)}")
+        return ErrorResponse("Unable to update Jar entry. Please try again", status_code=500).to_json_response()
