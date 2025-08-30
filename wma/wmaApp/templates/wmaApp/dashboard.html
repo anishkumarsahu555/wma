@@ -1,0 +1,281 @@
+{% extends 'wmaApp/baseIndex.html' %}
+{% load static %}
+{% block title %}
+<title>Dashboard</title>
+{% endblock %}
+{% block css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<style>
+    /* General Dashboard Card Styling */
+    .dashboard-card {
+        border-radius: 1rem !important;
+        color: #fff !important;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.25) !important;
+    }
+
+    /* Make all text readable */
+    .dashboard-card .header,
+    .dashboard-card .meta,
+    .dashboard-card .description,
+    .dashboard-card .content,
+    .dashboard-card i.icon {
+        color: #fff !important;
+    }
+
+    .dashboard-card .header.count {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+    }
+    .dashboard-card .meta {
+        font-size: 1rem;
+        font-weight: 500;
+        opacity: 0.9;
+    }
+    .dashboard-card .description {
+        font-size: 0.9rem;
+        opacity: 0.85;
+    }
+    .dashboard-card i.icon {
+        font-size: 2.5rem;
+        opacity: 0.95;
+    }
+
+    /* Gradient Backgrounds */
+    .red-card { background: linear-gradient(135deg, #ff416c, #ff4b2b)!important; }
+    .green-card { background: linear-gradient(135deg, #11998e, #38ef7d)!important;; }
+    .teal-card { background: linear-gradient(135deg, #06beb6, #48b1bf)!important;; }
+    .purple-card { background: linear-gradient(135deg, #8e2de2, #4a00e0)!important;; }
+    .orange-card { background: linear-gradient(135deg, #f7971e, #ffd200)!important;; }
+
+    /* Button tweaks */
+    .ui.button {
+        border-radius: 2rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* Mobile Spacing */
+    @media(max-width: 768px) {
+        .dashboard-card {
+            margin-bottom: 1rem !important;
+        }
+    }
+    .dashboard-card .ui.button {
+        border-radius: 2rem !important;
+        font-weight: 600 !important;
+        color: #fff !important;          /* Ensure button text is visible */
+    }
+</style>
+{% endblock %}
+{% block body %}
+<div class="ui left aligned basic  grid">
+    <div class="sixteen wide column">
+        <div class="ui  pointing secondary menu">
+            <div style="cursor: pointer;" class="item active" data-tab="user"
+            >Dashboard
+            </div>
+        </div>
+        <div class="ui tab " data-tab="user">
+
+            <div class="ui grid stackable padded">
+                <!-- Total Parties -->
+                <div class="four wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui fluid card dashboard-card red-card">
+                        <div class="content">
+                            <div class="ui right floated header">
+                                <i class="users icon"></i>
+                            </div>
+                            <div class="header" id="customerCount">0</div>
+                            <div class="meta">Total Parties</div>
+                            <div class="description">Total number of Parties.</div>
+                        </div>
+                        <div class="extra content">
+                            <a class="ui inverted red button fluid">More Info</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Users -->
+                <div class="four wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui fluid card dashboard-card green-card">
+                        <div class="content">
+                            <div class="ui right floated header">
+                                <i class="user tie icon"></i>
+                            </div>
+                            <div class="header" id="salesCount">0</div>
+                            <div class="meta">Total Users</div>
+                            <div class="description">Total number of Staff users.</div>
+                        </div>
+                        <div class="extra content">
+                            <a class="ui inverted green button fluid">More Info</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Geolocation -->
+                <div class="four wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui fluid card dashboard-card teal-card">
+                        <div class="content">
+                            <div class="ui right floated header">
+                                <i class="map marker alternate icon"></i>
+                            </div>
+                            <div class="header" id="todayInstallmentCount">0</div>
+                            <div class="meta">Geolocation Service</div>
+                            <div class="description">Number of location service used.</div>
+                        </div>
+                        <div class="extra content">
+                            <a class="ui inverted teal button fluid">More Info</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collections -->
+                <div class="four wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui fluid card dashboard-card purple-card">
+                        <div class="content">
+                            <div class="ui right floated header">
+                                <i class="hand holding usd icon"></i>
+                            </div>
+                            <div class="header" id="collection">0</div>
+                            <div class="meta">Today's Collection</div>
+                            <div class="description">Total amount of collections.</div>
+                        </div>
+                        <div class="extra content">
+                            <a class="ui inverted purple button fluid">More Info</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sales -->
+                <div class="four wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui fluid card dashboard-card orange-card">
+                        <div class="content">
+                            <div class="ui right floated header">
+                                <i class="shopping cart icon"></i>
+                            </div>
+                            <div class="header" id="sale">0</div>
+                            <div class="meta">Today's Sales</div>
+                            <div class="description">Total amount of sales.</div>
+                        </div>
+                        <div class="extra content">
+                            <a class="ui inverted orange button fluid">More Info</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="four wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui fluid card dashboard-card orange-card">
+                        <div class="content">
+                            <div class="ui right floated header">
+                                <i class="shopping cart icon"></i>
+                            </div>
+                            <div class="header" id="sale">0</div>
+                            <div class="meta">Today's Sales</div>
+                            <div class="description">Total amount of sales.</div>
+                        </div>
+                        <div class="extra content">
+                            <a class="ui inverted orange button fluid">More Info</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="four wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui fluid card dashboard-card orange-card">
+                        <div class="content">
+                            <div class="ui right floated header">
+                                <i class="shopping cart icon"></i>
+                            </div>
+                            <div class="header" id="sale">0</div>
+                            <div class="meta">Today's Sales</div>
+                            <div class="description">Total amount of sales.</div>
+                        </div>
+                        <div class="extra content">
+                            <a class="ui inverted orange button fluid">More Info</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="eight wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui segment chart-card">
+                        <h5>OVERVIEW</h5>
+                        <h3>Sales value</h3>
+                        <div class="chart-wrap">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="eight wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui segment chart-card">
+                        <h5>PERFORMANCE</h5>
+                        <h3>Total orders</h3>
+                        <div class="chart-wrap">
+                            <canvas id="ordersChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+
+            </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+
+<script>
+    $(function() {
+        // Initialize all progress bars
+        $('.progress').progress({ showActivity:false, limitValues:true });
+
+        // Charts config
+        const chartOpts = {
+            responsive: true, maintainAspectRatio: true, aspectRatio: 2.1,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, ticks: { stepSize: 10, precision: 0 } }
+            }
+        };
+        // Sales Line Chart
+        new Chart(document.getElementById('salesChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+                datasets: [{
+                    label: 'Sales',
+                    data: [5,20,15,30,25,60],
+                    borderColor: '#4a00e0',
+                    backgroundColor: 'rgba(74,0,224,0.10)',
+                    fill: true,
+                    tension: 0.45,
+                    pointRadius: 0
+                }]
+            },
+            options: chartOpts
+        });
+        // Orders Bar Chart
+        new Chart(document.getElementById('ordersChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Mon','Tue','Wed','Thu','Fri','Sat'],
+                datasets: [{
+                    label: 'Orders',
+                    data: [25,20,30,22,15,29],
+                    backgroundColor: '#ff4b2b',
+                    borderRadius: 9
+                }]
+            },
+            options: chartOpts
+        });
+    });
+</script>
+{% endblock %}
+
