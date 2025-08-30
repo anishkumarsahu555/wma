@@ -261,12 +261,23 @@
 
         </div>
     </div>
+    <div class="item">
+        <div class="header">
+            Manage Payments
+        </div>
+        <div class="menu">
+            <a class="item" href="{% url 'wmaApp:manage_payments' %}">
+                <div><i class="hand holding usd icon"></i>Payment List</div>
+            </a>
+
+        </div>
+    </div>
         <div class="item">
             <div class="header">
                 Profile
             </div>
             <div class="menu">
-                <a class="item" href="#">
+                <a class="item" href="{% url 'wmaApp:my_profile' %}">
                     <div><i class="user icon"></i>My Profile</div>
                 </a>
                 <a class="item" href="{% url 'wmaApp:logout' %}">

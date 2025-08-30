@@ -1,4 +1,8 @@
+from datetime import datetime
+
 from django.contrib.auth import logout, authenticate, login
+from django.db import transaction
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -8,6 +12,33 @@ from utils.logger import logger
 from .models import *
 # Create your views here.
 
+@csrf_exempt
+@transaction.atomic
+def change_password_api(request):
+    if request.method == 'POST':
+        try:
+            password = request.POST.get('password')
+            print(password)
+            logger.info(
+                f"Password change request received for user {request.user.username}"
+            )
+            data = StaffUser.objects.select_related().get(userID_id=request.user.pk)
+            data.password = password
+            data.save()
+            user = User.objects.select_related().get(pk=request.user.pk)
+            user.set_password(password)
+            user.save()
+            user = authenticate(request, username=user.username, password=password)
+            if user is not None:
+                login(request, user)
+                logger.info("Password changed successfully")
+                return JsonResponse({'message': 'success'}, safe=False)
+            logger.error("Password change failed")
+            return JsonResponse({'message': 'success'}, safe=False)
+
+        except Exception as e:
+            logger.error(f"Password change failed: {e}")
+            return JsonResponse({'message': 'error'}, safe=False)
 
 
 def login_page(request):
@@ -54,7 +85,42 @@ def homepage(request):
 
 def dashboard(request):
     logger.info("Dashboard called")
-    return render(request, 'wmaApp/dashboard.html')
+    today = datetime.today()
+
+    payments_today = Payment.objects.filter(paymentDate=today, isDeleted=False).aggregate(total=Sum('paymentAmount'))['total'] or 0
+    jars_in = JarCounter.objects.filter(date=today).aggregate(total=Sum('inJar'))['total'] or 0
+    jars_out = JarCounter.objects.filter(date=today).aggregate(total=Sum('outJar'))['total'] or 0
+    total_expense = Expense.objects.filter(isDeleted=False).aggregate(total=Sum('expenseAmount'))['total'] or 0
+    total_sales = Sales.objects.filter(isDeleted=False).aggregate(total=Sum('totalAmount'))['total'] or 0
+    total_customers = Customer.objects.filter(isDeleted=False).count()
+    total_staff = StaffUser.objects.filter(isDeleted=False).count()
+    total_suppliers = Supplier.objects.filter(isDeleted=False).count()
+
+    # Example dummy data for charts
+    months = ["Jan", "Feb", "Mar", "Apr", "May"]
+    sales_data = [20000, 25000, 30000, 28000, 35000]
+    expense_data = [8000, 10000, 12000, 9500, 14000]
+    payments_by_mode = [30000, 20000, 5000]
+    top_customers_names = ["Alice", "Bob", "Charlie", "David", "Eve"]
+    top_customers_sales = [12000, 10000, 8000, 6000, 4000]
+
+    context = {
+        "payments_today": payments_today,
+        "jars_in": jars_in,
+        "jars_out": jars_out,
+        "total_expense": total_expense,
+        "total_sales": total_sales,
+        "total_customers": total_customers,
+        "total_staff": total_staff,
+        "total_suppliers": total_suppliers,
+        "months": months,
+        "sales_data": sales_data,
+        "expense_data": expense_data,
+        "payments_by_mode": payments_by_mode,
+        "top_customers_names": top_customers_names,
+        "top_customers_sales": top_customers_sales,
+    }
+    return render(request, 'wmaApp/dashboard.html',context)
 
 def admin_home(request):
     return render(request, 'admin_home.html')
@@ -81,11 +147,6 @@ def manage_customer(request):
 
 def manage_supplier(request):
     return render(request, 'wmaApp/manage_supplier.html')
-
-
-def manage_jar_counter(request):
-    return render(request, 'wmaApp/manage_jar_counter.html')
-
 
 def manage_location(request):
     logger.info("Manage location called")
@@ -163,3 +224,14 @@ def manage_expense(request):
 def manage_jars(request):
     logger.info("Manage jars is called")
     return render(request, 'wmaApp/jars/manage_jars.html',)
+
+def manage_payments(request):
+    logger.info("Manage payments is called")
+    return render(request, 'wmaApp/payments/manage_payments.html',)
+
+def my_profile(request):
+    instance = get_object_or_404(StaffUser, userID_id=request.user.pk)
+    context = {
+        'instance': instance
+    }
+    return render(request, 'wmaApp/profile/my_profile.html', context)

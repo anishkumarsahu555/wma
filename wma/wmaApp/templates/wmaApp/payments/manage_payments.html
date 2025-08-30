@@ -1,7 +1,7 @@
 {% extends 'wmaApp/baseIndex.html' %}
 {% load static %}
 {% block title %}
-<title>Manage Jars</title>
+<title>Manage Payments</title>
 {% endblock %}
 {% block css %}
 {% endblock %}
@@ -36,12 +36,12 @@
     <div class="sixteen wide column">
         <div class="ui  pointing secondary menu">
             <div style="cursor: pointer;" class="item active" data-tab="user"
-            >Jar Counter List
+            >Payment List
             </div>
             <div style=" position: absolute;right: 1.5rem;top: 18px;">
                 <button class="ui green mini plus button right" onclick="showUserModal()">
                     <i class="plus square outline icon"></i>
-                    Add Jar Counter
+                    Add Payment
                 </button>
             </div>
         </div>
@@ -106,10 +106,12 @@
                         <thead>
                         <tr>
                             <th>Customer</th>
-                            <th>In-Jar</th>
-                            <th>Out-Jar</th>
+                            <th>Amount</th>
+                            <th>IsApproved</th>
+                            <th>ApprovedBy</th>
+                            <th>PaymentDate</th>
+                            <th>AddedBy</th>
                             <th>Remark</th>
-                            <th>Date</th>
                             <th>Added On</th>
                             <th>Actions</th>
                         </tr>
@@ -122,7 +124,7 @@
                 <div class="ui modal" id="myModalUser">
                     <i class="close icon"></i>
                     <div class="header">
-                        Add Jar Record
+                        Add Payment Record
                     </div>
                     <div class="content">
                         <form class="ui tiny form" id="addForm">{% csrf_token %}
@@ -134,16 +136,13 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="two unstackable required fields">
+                            <div class="one required fields">
 
-                                <div class="eight wide field">
-                                    <label>Jar-In</label>
-                                    <input type="number" name="Jar-In" placeholder="Jar-In" id="in">
+                                <div class="sixteen wide field">
+                                    <label>Amount</label>
+                                    <input type="number" name="amount" placeholder="Amount" id="amount">
                                 </div>
-                                <div class="eight wide field">
-                                    <label>Jar-out</label>
-                                    <input type="number" name="Jar-Out" placeholder="Jar-Out" id="out">
-                                </div>
+
                             </div>
                             <div class="one fields">
                                 <div class="sixteen wide field">
@@ -206,16 +205,13 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="two unstackable required fields">
+                        <div class="one required fields">
 
-                            <div class="eight wide field">
-                                <label>Jar-In</label>
-                                <input type="number" name="Jar-In" placeholder="Jar-In" id="inEdit">
+                            <div class="sixteen wide field">
+                                <label>Amount</label>
+                                <input type="number" name="amount" placeholder="Amount" id="amountEdit">
                             </div>
-                            <div class="eight wide field">
-                                <label>Jar-out</label>
-                                <input type="number" name="Jar-Out" placeholder="Jar-Out" id="outEdit">
-                            </div>
+
                         </div>
                         <div class="one fields">
                             <div class="sixteen wide field">
@@ -293,10 +289,9 @@
     function addDetail() {
         showLoading();
         var customer = $('#customer').val();
-        var jar_in = $('#in').val();
-        var jar_out = $('#out').val();
+        var amount = $('#amount').val();
         var remark = $('#remark').val();
-        if (customer === ''|| jar_in === '' || jar_out === '' ) {
+        if (customer === ''|| amount === '' ) {
             $('body')
                 .toast({
                     class: 'orange',
@@ -310,13 +305,12 @@
 
         data = new FormData();
         data.append('customer', customer);
-        data.append('jar_in', jar_in);
-        data.append('jar_out', jar_out);
+        data.append('amount', amount);
         data.append('remark', remark);
         data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
         $.ajax({
             type: 'post',
-            url: "{% url 'wma_api:add_jar_api' %}",
+            url: "{% url 'wma_api:add_payment_api' %}",
             data: data,
             contentType: false,
             cache: false,
@@ -391,26 +385,28 @@
         buttons: [{
             extend: 'excel',
             exportOptions: {
-                columns: [0,1, 2, 3,4,5]
+                columns: [0,1, 2, 3,4,5,6,7]
             }
         }
 
         ],
         "columnDefs": [
             {"name": "customerID", "targets": 0, "orderable": true},
-            {"name": "inJar", "targets": 1, "orderable": true},
-            {"name": "outJar", "targets": 2, "orderable": true},
-            {"name": "remark", "targets": 3, "orderable": true},
-            {"name": "date", "targets": 4, "orderable": true},
-            {"name": "datetime", "targets": 5, "orderable": true},
-            {"name": "action", "targets": 6, "orderable": false}
+            {"name": "paymentAmount", "targets": 1, "orderable": true},
+            {"name": "isApprove", "targets": 2, "orderable": true},
+            {"name": "approvedBy", "targets": 3, "orderable": true},
+            {"name": "paymentDate", "targets": 4, "orderable": true},
+            {"name": "addedByID", "targets": 5, "orderable": true},
+            {"name": "remark", "targets": 6, "orderable": true},
+            {"name": "datetime", "targets": 7, "orderable": true},
+            {"name": "action", "targets": 8, "orderable": false}
         ],
-        aaSorting: [[5, 'desc']],
+        aaSorting: [[7, 'desc']],
         "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         "pageLength": 10,
         "processing": true,
         "serverSide": true,
-        "ajax": "{% url 'wma_api:JarListJson' %}"
+        "ajax": "{% url 'wma_api:PaymentListJson' %}"
     });
 
 
@@ -427,7 +423,7 @@
         formdata.append('id', id);
 
         $.ajax({
-            url: "{% url 'wma_api:delete_jar_api' %}",
+            url: "{% url 'wma_api:delete_payment_api' %}",
             type: "post",
             data: formdata,
             contentType: false,
@@ -477,15 +473,12 @@
         debugger;
         $.ajax({
             type: 'get',
-            url: "{% url 'wma_api:get_jar_detail' %}",
+            url: "{% url 'wma_api:get_payment_detail' %}",
             data: { id: id },
             success: function (response) {
-
-                console.log(response);
                 $('#EditUserId').val(response.data['id']);
                 $('#customerEdit').val(response.data['customerID']).change();
-                $('#inEdit').val(response.data['inJar']);
-                $('#outEdit').val(response.data['outJar']);
+                $('#amountEdit').val(response.data['amount']);
                 $('#remarkEdit').val(response.data['remark']);
 
             },
@@ -504,11 +497,10 @@
         showLoading();
         var id = $('#EditUserId').val();
         var customer = $('#customerEdit').val();
-        var jar_in = $('#inEdit').val();
-        var jar_out = $('#outEdit').val();
+        var amount = $('#amountEdit').val();
         var remark = $('#remarkEdit').val();
 
-        if (customer === ''|| jar_in === '' || jar_out === '') {
+        if (customer === ''|| amount === '') {
             $('body')
                 .toast({
                     class: 'orange',
@@ -523,14 +515,13 @@
         data = new FormData();
         data.append('id', id);
         data.append('customer', customer);
-        data.append('jar_in', jar_in);
-        data.append('jar_out', jar_out);
+        data.append('amount', amount);
         data.append('remark', remark);
         data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
 
         $.ajax({
             type: 'post',
-            url: "{% url 'wma_api:update_jar_api' %}",
+            url: "{% url 'wma_api:update_payment_api' %}",
             data: data,
             contentType: false,
             cache: false,
@@ -654,7 +645,7 @@
         var startDate = $('#startDateF').val();
         var endDate = $('#endDateF').val();
         var staffID = $('#staffID').val();
-        userTab.ajax.url('{% url 'wma_api:JarListJson' %}?startDate=' + startDate + '&endDate=' + endDate + '&staffID=' + staffID).load();
+        userTab.ajax.url('{% url 'wma_api:PaymentListJson' %}?startDate=' + startDate + '&endDate=' + endDate + '&staffID=' + staffID).load();
 
     }
 

@@ -1808,7 +1808,7 @@ def update_expense_api(request):
         return ErrorResponse("Unable to update expense. Please try again", status_code=500).to_json_response()
 
 
-# ---------------------------- Manage Expense api ---------------------------
+# ---------------------------- Manage Jar api ---------------------------
 @csrf_exempt
 @require_http_methods(['POST'])
 @validate_input(['customer', 'jar_in','jar_out', 'remark' ])
@@ -1982,3 +1982,178 @@ def update_jar_api(request):
     except Exception as e:
         logger.error(f"Error while updating Jar entry: {str(e)}")
         return ErrorResponse("Unable to update Jar entry. Please try again", status_code=500).to_json_response()
+
+
+# ---------------------------- Manage Payment api ---------------------------
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['customer', 'amount', 'remark' ])
+@transaction.atomic
+def add_payment_api(request):
+    data = request.POST.dict()
+    try:
+        obj = Payment(
+            customerID_id=data['customer'],
+            paymentAmount=data['amount'],
+            remark=data['remark'],
+            paymentDate = datetime.today().date(),
+            ownerID_id=get_owner_id(request),
+        )
+        obj.save()
+        logger.info("Payment record added successfully")
+        return SuccessResponse("Payment record added successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while adding Payment record: {e}")
+        return ErrorResponse("Unable to add new Payment record. Please try again").to_json_response()
+
+
+class PaymentListJson(BaseDatatableView):
+    order_columns = [ 'customerID','paymentAmount','isApprove' ,'approvedBy'  , 'paymentDate' ,'addedByID' ,'remark' , 'dateCreated']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        owner_id = get_owner_id(self.request)
+        try:
+            startDateV = self.request.GET.get("startDate")
+            endDateV = self.request.GET.get("endDate")
+            staffID = self.request.GET.get("staffID")
+            sDate = datetime.strptime(startDateV, '%d/%m/%Y')
+            eDate = datetime.strptime(endDateV, '%d/%m/%Y')
+            if staffID == 'All':
+                return Payment.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id,paymentDate__range=[sDate.date(), eDate.date()])
+            else:
+                return Payment.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, paymentDate_range=[sDate.date(), eDate.date()],
+                                                                  addedBy_id=int(staffID))
+
+
+        except:
+            return Payment.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, paymentDate__icontains=datetime.today().date())
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(customerID__name__icontains=search)
+                |Q(paymentAmount__icontains=search)
+                |Q(paymentDate__icontains=search)
+                |Q(remark__icontains=search) |Q(customerID__locationID__name__icontains=search)
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </button>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+
+            json_data.append([
+                escape(item.customerID.name) + ' - ' + escape(item.customerID.locationID.name),
+                escape( item.paymentAmount),
+                escape(item.isApprove),
+                escape(item.approvedBy.name if item.approvedBy else ''),
+                escape(item.paymentDate.strftime('%d-%m-%Y')),
+                escape(item.addedByID.name if item.addedByID else ''),
+                escape(item.remark),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+                ])
+
+        return json_data
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_payment_api(request):
+
+    obj_id = request.POST.get("id")
+    try:
+        try:
+            obj = Payment.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+        except Payment.DoesNotExist:
+            logger.error(f"Payment entry not found")
+            return ErrorResponse("Payment entry not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.save()
+
+        logger.info("Payment entry deleted successfully")
+        return SuccessResponse("Payment entry deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting Payment entry : {e}")
+        return ErrorResponse(str(e), status_code=500).to_json_response()
+
+
+
+@require_http_methods(["GET"])
+@validate_input(['id'])
+def get_payment_detail(request):
+    try:
+        obj_id = request.GET.get('id')
+        # Get single staff user
+        try:
+            obj = Payment.objects.get(id=obj_id, isDeleted=False, ownerID_id=get_owner_id(request))
+            data = {
+                'id': obj.id,
+                'customerID': obj.customerID_id,
+                'amount': obj.paymentAmount,
+                'remark': obj.remark,
+                'date': obj.paymentDate,
+
+            }
+            logger.info("Payment entry fetched successfully")
+            return SuccessResponse("Payment entry fetched successfully", data=data).to_json_response()
+        except Payment.DoesNotExist:
+            logger.error(f"Payment entry with ID '{obj_id}' not found")
+            return ErrorResponse("Payment entry not found", status_code=404).to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while fetching Payment entry: {e}")
+        return ErrorResponse( 'Unable to fetch Payment entry. Please try again', status_code=500).to_json_response()
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['id','customer', 'amount','remark' ])
+@transaction.atomic
+def update_payment_api(request):
+    data = request.POST.dict()
+    try:
+        try:
+            obj = Payment.objects.get(
+                id=data['id'],
+                ownerID_id=get_owner_id(request),
+                isDeleted=False
+            )
+        except Payment.DoesNotExist:
+            logger.error(f"Payment  with ID {data["id"]}' not found")
+            return ErrorResponse("Payment not found", status_code=404).to_json_response()
+
+        obj.customerID_id = data['customer']
+        obj.paymentAmount = data['amount']
+        obj.remark = data['remark']
+        obj.save()
+
+        logger.info(f"Payment entry '{data['id']}' updated successfully")
+        return SuccessResponse("Payment entry updated successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while updating Payment: {str(e)}")
+        return ErrorResponse("Unable to update Payment. Please try again", status_code=500).to_json_response()

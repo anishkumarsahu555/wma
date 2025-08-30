@@ -142,7 +142,7 @@ MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), "media_cdn")
 
 PWA_APP_NAME = 'WMA'
 PWA_APP_DESCRIPTION = "Water Management App."
-PWA_APP_THEME_COLOR = '#611e69'
+PWA_APP_THEME_COLOR = '#1e353e'
 PWA_APP_DISPLAY = 'standalone'
 PWA_APP_START_URL = '/'
 PWA_APP_ICONS = [

@@ -282,6 +282,7 @@ class Payment(models.Model):
     addedByID = models.ForeignKey(StaffUser, on_delete=models.CASCADE, null=True, blank=True)
     isDeleted = models.BooleanField(default=False)
     isApprove = models.BooleanField(default=False)
+    approvedBy = models.ForeignKey(StaffUser, on_delete=models.CASCADE, null=True, blank=True, related_name='approvedBy')
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
 

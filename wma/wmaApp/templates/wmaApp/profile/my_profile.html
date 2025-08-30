@@ -1,0 +1,214 @@
+{% extends 'wmaAPP/baseIndex.html' %}
+{% load static %}
+
+{% block title %}
+<title>My Profile</title>
+{% endblock %}
+{% block css %}
+
+{% endblock %}
+{% block body %}
+<div class="ui right aligned basic  grid">
+    <div class="sixteen wide column">
+        <div class="ui  pointing secondary menu">
+            <div style="cursor: pointer;" class="item active" data-tab="user"
+            >My Profile
+            </div>
+        </div>
+
+        <div class="ui tab " data-tab="user">
+            <div style=" position: absolute;right: 1.5rem;top: 18px;">
+                <button class="ui green mini plus button right" onclick="showUserModal()">
+                    <i class="plus square outline icon"></i>
+                    Change Password
+                </button>
+            </div>
+            <!-- Profile Section -->
+            <div class="ui centered raised card" style="margin-top: 3rem; max-width: 400px; border-radius: 1rem; overflow: hidden;">
+
+                <!-- Fancy header -->
+                <div style="background: linear-gradient(135deg, #21ba45, #16ab39); height: 120px; position: relative;">
+                    <div style="position: absolute; left: 50%; top: 100%; transform: translate(-50%, -50%);">
+                        <img class="ui circular centered image"
+                             id="cImg"
+                             src="{{ instance.profile_pic.url }}"
+                             alt="Profile Picture"
+                             style="width: 120px; height: 120px; border: 4px solid white; box-shadow: 0px 4px 12px rgba(0,0,0,0.2);">
+                    </div>
+                </div>
+
+                <!-- Profile Content -->
+                <div class="content" style="margin-top: 70px; text-align: center; padding-bottom: 1.5rem;">
+                    <h2 class="ui header" id="Name" style="margin-bottom: 0.3rem;">
+                        {{ instance.name|capfirst }}
+                    </h2>
+                    <div class="meta" style="margin-bottom: 1rem;">
+                <span id="username" class="ui small grey text">
+                    <i class="user icon"></i> {{ instance.username }}
+                </span>
+                    </div>
+                    <div class="description">
+                        <p id="Phone" style="margin: 0.5rem 0;">
+                            <i class="phone icon green"></i> {{ instance.phone }}
+                        </p>
+                        <p id="address" class="ui grey text" style="margin: 0.5rem 0;">
+                            <i class="map marker alternate icon red"></i> {{ instance.address|capfirst }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="ui tiny modal" id="myModalUser">
+    <i class="close icon"></i>
+    <div class="header">
+        Change Password
+    </div>
+    <div class="content">
+
+        <form class="ui tiny form" id="addForm">{% csrf_token %}
+
+            <div class="one required fields">
+                <div class="sixteen wide field">
+                    <label>New Password</label>
+                    <input type="password" name="NewPassword" placeholder="New Password" id="newPassword">
+                </div>
+
+            </div>
+            <div class="one required fields">
+                <div class="sixteen wide field">
+                    <label>Confirm Password</label>
+                    <input type="password" name="confirmPassword" placeholder="Confirm Password" id="confirmPassword">
+                </div>
+
+            </div>
+
+        </form>
+
+        <div class="actions" style="padding-top: 20px; padding-bottom: 20px ;float: right">
+            <div class="ui cancel button">Cancel</div>
+            <button class="ui right labeled icon button green saveBtn" onclick="changePassword()">
+                Submit
+                <i class="checkmark icon"></i>
+            </button>
+            <button style="display: none" class="ui right labeled icon button green saveBtnLoad" >
+                Saving ...
+                <i class="checkmark icon"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script>
+
+    function showUserModal() {
+        $('#myModalUser').modal('show');
+    }
+    function changePassword() {
+        showLoading();
+        var pass = $('#newPassword').val();
+        var passc = $('#confirmPassword').val();
+
+
+        if (pass === '' || passc === "") {
+            $('body')
+                .toast({
+                    class: 'orange',
+                    message: '* fields are required.'
+                })
+            ;
+            hideLoading();
+
+        }
+
+        else {
+            if (pass !== passc) {
+                $('body')
+                    .toast({
+                        class: 'orange',
+                        message: 'Password not matched.'
+                    })
+                ;
+                hideLoading();
+            }
+            else if (pass.length < 8) {
+                $('body')
+                    .toast({
+                        class: 'orange',
+                        message: 'Password should be at least 8 characters long.'
+                    })
+                ;
+                hideLoading();
+
+            }
+            else {
+                var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
+
+                data = new FormData();
+                data.append('password', pass);
+
+
+                data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
+
+
+                $.ajax({
+                    type: 'post',
+                    url: '{% url "wmaApp:change_password_api" %}',
+                    data: data,
+                    contentType: false,
+                    cache: false,
+                    processData: false,
+
+
+                    success: function (response) {
+                        if (response.message === 'success') {
+                            $('body')
+                                .toast({
+                                    class: 'success',
+                                    message: 'Password changed Successfully.'
+                                })
+                            ;
+
+
+                            $('#addForm').trigger('reset');
+                            $('#myModalUser').modal('toggle');
+                            hideLoading();
+                        } else {
+                            $('body')
+                                .toast({
+                                    class: 'error',
+                                    message: 'An error occurred !'
+                                })
+                            ;
+                            hideLoading();
+
+                        }
+
+                        return response;
+                    },
+                    error: function () {
+                        $('body')
+                            .toast({
+                                class: 'error',
+                                message: 'An error occurred !'
+                            })
+                        ;
+                        hideLoading();
+
+
+                    }
+                });
+            }
+        }
+    }
+
+
+
+</script>
+{% endblock %}

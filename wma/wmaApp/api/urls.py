@@ -81,4 +81,11 @@ urlpatterns = [
     path('get_jar_detail/', get_jar_detail, name='get_jar_detail'),
     path('update_jar_api/', update_jar_api, name='update_jar_api'),
 
+    # Payment api urls
+    path('add_payment_api/', add_payment_api, name='add_payment_api'),
+    path('PaymentListJson/', PaymentListJson.as_view(), name='PaymentListJson'),
+    path('delete_payment_api/', delete_payment_api, name='delete_payment_api'),
+    path('get_payment_detail/', get_payment_detail, name='get_payment_detail'),
+    path('update_payment_api/', update_payment_api, name='update_payment_api'),
+
 ]
