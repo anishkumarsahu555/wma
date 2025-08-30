@@ -125,6 +125,7 @@
                             <th>Location</th>
                             <th>PhoneNo.</th>
                             <th>Address</th>
+                            <th>AddedBy</th>
                             <th>Added On</th>
                             <th>Actions</th>
                         </tr>
@@ -517,10 +518,11 @@
             {"name": "locationID", "targets": 3, "orderable": true},
             {"name": "phone", "targets": 4, "orderable": true},
             {"name": "address", "targets": 5, "orderable": true},
-            {"name": "datetime", "targets": 6, "orderable": true},
-            {"name": "action", "targets": 7, "orderable": false}
+            {"name": "addedByID", "targets": 6, "orderable": true},
+            {"name": "datetime", "targets": 7, "orderable": true},
+            {"name": "action", "targets": 8, "orderable": false}
         ],
-        aaSorting: [[6, 'desc']],
+        aaSorting: [[7, 'desc']],
         "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         "pageLength": 10,
         "processing": true,

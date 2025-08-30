@@ -10,7 +10,7 @@ from django.contrib.auth.models import User, Group
 from django_datatables_view.base_datatable_view import BaseDatatableView
 
 from utils.custom_response import SuccessResponse, ErrorResponse
-from utils.get_owner_detail import get_owner_id
+from utils.get_user_id_detail import get_owner_id, get_user_id
 from utils.json_validator import validate_input
 from wmaApp.models import *
 from utils.logger import logger
@@ -598,6 +598,7 @@ def add_customer_api(request):
             address=data.get('address', ''),
             addedDate=datetime.today().now(),
             ownerID_id=owner_id,
+            addedByID_id = get_user_id(request)
         )
         username = 'CUS' + get_random_string(length=8, allowed_chars='1234567890')
         password = get_random_string(length=8, allowed_chars='1234567890')
@@ -662,7 +663,7 @@ def update_customer_api(request):
 
 
 class CustomerListJson(BaseDatatableView):
-    order_columns = ['profile_pic', 'customerId','name',  'locationID', 'phone', 'address', 'dateCreated']
+    order_columns = ['profile_pic', 'customerId','name',  'locationID', 'phone', 'address','addedByID', 'dateCreated']
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
@@ -675,7 +676,7 @@ class CustomerListJson(BaseDatatableView):
             qs = qs.filter(
                 Q(name__icontains=search) | Q(customerId__icontains=search)
                 | Q(locationID__icontains=search) | Q(phone__icontains=search)
-                | Q(address__icontains=search)
+                | Q(address__icontains=search) | Q(addedByID__name__icontains=search)
                 | Q(dateCreated__icontains=search)
             )
 
@@ -704,6 +705,7 @@ class CustomerListJson(BaseDatatableView):
                 escape(item.locationID.name),
                 escape(item.phone),
                 escape(item.address),
+                escape(item.addedByID.name if item.addedByID else ''),
                 escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
                 action,
 
@@ -1475,6 +1477,7 @@ def add_sales_api(request):
             additionalCharge=data['additionalCharge'],
             totalAmountAfterTax=data['grandTotal'],
             ownerID_id=owner_id,
+            addedByID_id = get_user_id(request),
         )
         obj.save()
         obj.invoiceNumber = "S"+str(Sales.objects.filter(ownerID_id=owner_id).count()).zfill(8)
@@ -1666,6 +1669,7 @@ def add_expense_api(request):
             expenseDescription=data['description'],
             expenseDate = datetime.today().date(),
             ownerID_id=get_owner_id(request),
+            staffID_id = get_user_id(request),
         )
         obj.save()
         logger.info("Expense added successfully")
@@ -1676,7 +1680,7 @@ def add_expense_api(request):
 
 
 class ExpenseListJson(BaseDatatableView):
-    order_columns = [ 'groupID','expenseAmount' ,'expenseDescription' , 'expenseDate' , 'dateCreated']
+    order_columns = [ 'groupID','expenseAmount' ,'expenseDescription' , 'expenseDate', 'staffID' , 'dateCreated']
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
@@ -1690,7 +1694,7 @@ class ExpenseListJson(BaseDatatableView):
                 Q(groupID__name__icontains=search)
                 |Q(expenseAmount__icontains=search)
                 |Q(expenseDescription__icontains=search) |Q(expenseDate__icontains=search)
-                | Q(dateCreated__icontains=search)
+                | Q(staffID__name__icontains=search) | Q(dateCreated__icontains=search)
             )
 
         return qs
@@ -1717,6 +1721,7 @@ class ExpenseListJson(BaseDatatableView):
                 escape(item.expenseAmount),
                 escape(item.expenseDescription),
                 escape(item.expenseDate.strftime('%d-%m-%Y %I:%M %p')),
+                escape(item.staffID.name if item.staffID else ''),
                 escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
                 action,
 
@@ -1823,6 +1828,8 @@ def add_jar_api(request):
             remark=data['remark'],
             date = datetime.today().date(),
             ownerID_id=get_owner_id(request),
+            addedByID_id = get_user_id(request),
+
         )
         obj.save()
         logger.info("Jar record added successfully")
@@ -1833,7 +1840,7 @@ def add_jar_api(request):
 
 
 class JarListJson(BaseDatatableView):
-    order_columns = [ 'customerID','inJar' ,'outJar' ,'remark' , 'date' , 'dateCreated']
+    order_columns = [ 'customerID','inJar' ,'outJar' ,'remark' , 'addedByID' , 'date' , 'dateCreated']
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
@@ -1859,7 +1866,7 @@ class JarListJson(BaseDatatableView):
         search = self.request.GET.get('search[value]', None)
         if search:
             qs = qs.filter(
-                Q(customerID__name__icontains=search)
+                Q(customerID__name__icontains=search)|Q(addedByID__name__icontains=search)
                 |Q(inJar__icontains=search)    |Q(outJar__icontains=search)
                 |Q(date__icontains=search)
                 |Q(remark__icontains=search) |Q(customerID__locationID__name__icontains=search)
@@ -1890,6 +1897,7 @@ class JarListJson(BaseDatatableView):
                 escape(int(item.inJar)),
                 escape( int(item.outJar)),
                 escape(item.remark),
+                escape(item.addedByID.name if item.addedByID else ''),
                 escape(item.date.strftime('%d-%m-%Y')),
                 escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
                 action,
@@ -1998,6 +2006,7 @@ def add_payment_api(request):
             remark=data['remark'],
             paymentDate = datetime.today().date(),
             ownerID_id=get_owner_id(request),
+            addedByID_id = get_user_id(request)
         )
         obj.save()
         logger.info("Payment record added successfully")

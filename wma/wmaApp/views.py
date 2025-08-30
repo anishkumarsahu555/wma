@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from utils.get_owner_detail import get_owner_id
+from utils.get_user_id_detail import get_owner_id
 from utils.logger import logger
 from .models import *
 # Create your views here.

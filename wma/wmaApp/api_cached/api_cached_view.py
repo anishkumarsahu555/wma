@@ -1,7 +1,7 @@
 from utils.custom_response import SuccessResponse, ErrorResponse
 from django.core.cache import cache
 
-from utils.get_owner_detail import get_owner_id
+from utils.get_user_id_detail import get_owner_id
 from utils.logger import logger
 from wmaApp.models import *
 
