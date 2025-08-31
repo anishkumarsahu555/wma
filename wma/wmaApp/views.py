@@ -280,6 +280,19 @@ def edit_sale(request, id=None):
     }
     return render(request, 'wmaApp/sales/edit_sales.html', context)
 
+@check_groups('Owner','Manager','Admin')
+def detail_sale(request, id=None):
+    logger.info("Detail sale called")
+    object = get_object_or_404(Sales, pk=id, isDeleted=False, ownerID_id=get_owner_id(request))
+    products = SaleProduct.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request), salesID_id =object.id )
+
+    context = {
+        'object': object,
+        'products': products
+    }
+    return render(request, 'wmaApp/sales/sales_detail.html', context)
+
+
 @check_groups('Owner','Manager','Admin', 'Driver')
 def manage_expense(request):
     logger.info("Manage expense called")

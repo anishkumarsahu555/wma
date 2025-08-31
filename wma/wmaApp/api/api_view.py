@@ -1569,12 +1569,19 @@ class SalesListJson(BaseDatatableView):
             if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
                     'Manager' in self.request.user.groups.values_list('name', flat=True)or \
                     'Admin' in self.request.user.groups.values_list('name', flat=True):
-                action = '''<a href="/edit_sale/{}/" data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button green">
+                action = '''
+                <a href="/detail_sale/{}/" data-inverted="" data-tooltip="View Ledger" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button pink">
+                   <i class="book reader icon"></i>
+                  </a> 
+                   <a href="/detail_sale/{}/" data-inverted="" data-tooltip="View Detail" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button orange">
+                    <i class="eye icon"></i>
+                  </a>
+                <a href="/edit_sale/{}/" data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </a>
                   <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
                     <i class="trash alternate icon"></i>
-                  </button></td>'''.format(item.pk, item.pk),
+                  </button></td>'''.format(item.pk,item.pk,item.pk, item.pk),
 
             else:
                 action = '''<div class="ui tiny label">
