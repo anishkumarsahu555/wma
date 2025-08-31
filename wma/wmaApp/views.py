@@ -1,8 +1,12 @@
-from datetime import datetime
+import datetime
+import json
+
+from django.utils import timezone
 
 from django.contrib.auth import logout, authenticate, login
 from django.db import transaction
 from django.db.models import Sum
+from django.db.models.functions import TruncDate
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -85,40 +89,63 @@ def homepage(request):
 
 def dashboard(request):
     logger.info("Dashboard called")
-    today = datetime.today()
+    today = datetime.datetime.today()
+    owner_id = get_owner_id(request)
+    payments_today = Payment.objects.filter(paymentDate=today, isDeleted=False, ownerID_id=owner_id).aggregate(total=Sum('paymentAmount'))['total'] or 0
+    jars_in = JarCounter.objects.filter(date=today,ownerID_id=owner_id, isDeleted=False).aggregate(total=Sum('inJar'))['total'] or 0
+    jars_out = JarCounter.objects.filter(date=today,ownerID_id=owner_id, isDeleted=False).aggregate(total=Sum('outJar'))['total'] or 0
+    total_expense = Expense.objects.filter(isDeleted=False,ownerID_id=owner_id, expenseDate=today).aggregate(total=Sum('expenseAmount'))['total'] or 0
+    total_sales = Sales.objects.filter(isDeleted=False,ownerID_id=owner_id, saleDate=today).aggregate(total=Sum('totalAmount'))['total'] or 0
+    total_customers = Customer.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
+    total_staff = StaffUser.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
+    total_suppliers = Supplier.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
+    total_locations = Location.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
 
-    payments_today = Payment.objects.filter(paymentDate=today, isDeleted=False).aggregate(total=Sum('paymentAmount'))['total'] or 0
-    jars_in = JarCounter.objects.filter(date=today).aggregate(total=Sum('inJar'))['total'] or 0
-    jars_out = JarCounter.objects.filter(date=today).aggregate(total=Sum('outJar'))['total'] or 0
-    total_expense = Expense.objects.filter(isDeleted=False).aggregate(total=Sum('expenseAmount'))['total'] or 0
-    total_sales = Sales.objects.filter(isDeleted=False).aggregate(total=Sum('totalAmount'))['total'] or 0
-    total_customers = Customer.objects.filter(isDeleted=False).count()
-    total_staff = StaffUser.objects.filter(isDeleted=False).count()
-    total_suppliers = Supplier.objects.filter(isDeleted=False).count()
+    today = timezone.now().date()
+    seven_days_ago = today - datetime.timedelta(days=6)  # last 7 days including today
 
-    # Example dummy data for charts
-    months = ["Jan", "Feb", "Mar", "Apr", "May"]
-    sales_data = [20000, 25000, 30000, 28000, 35000]
-    expense_data = [8000, 10000, 12000, 9500, 14000]
-    payments_by_mode = [30000, 20000, 5000]
-    top_customers_names = ["Alice", "Bob", "Charlie", "David", "Eve"]
-    top_customers_sales = [12000, 10000, 8000, 6000, 4000]
+    # Get sales grouped by date
+    sales_data = (
+    Sales.objects.filter(saleDate__range=[seven_days_ago, today], isDeleted=False, ownerID_id=owner_id)
+    .values("saleDate")  # directly group by date
+    .annotate(total=Sum("totalAmountAfterTax"))
+    .order_by("saleDate")
+    )
+    from collections import defaultdict
+
+    # Convert to dict for quick lookup
+    sales_dict = {entry["saleDate"]: entry["total"] for entry in sales_data}
+
+    final_dates = [(seven_days_ago + datetime.timedelta(days=i)) for i in range(7)]
+    sales_date = [d.strftime("%b %d") for d in final_dates]
+    sales_totals_by_date = [sales_dict.get(d, 0) for d in final_dates]
+
+
+    # Get sales grouped by date
+    payment_data = (
+        Payment.objects.filter(paymentDate__range=[seven_days_ago, today], isDeleted=False, ownerID_id=owner_id)
+        .values("paymentDate")  # directly group by date
+        .annotate(total=Sum("paymentAmount"))
+        .order_by("paymentDate")
+    )
+    # Convert to dict for quick lookup
+    payment_dict = {entry["paymentDate"]: entry["total"] for entry in payment_data}
+    payment_totals_by_date = [payment_dict.get(d, 0) for d in final_dates]
+
 
     context = {
         "payments_today": payments_today,
-        "jars_in": jars_in,
-        "jars_out": jars_out,
+        "jars_in": int(jars_in),
+        "jars_out": int(jars_out),
         "total_expense": total_expense,
         "total_sales": total_sales,
         "total_customers": total_customers,
         "total_staff": total_staff,
         "total_suppliers": total_suppliers,
-        "months": months,
-        "sales_data": sales_data,
-        "expense_data": expense_data,
-        "payments_by_mode": payments_by_mode,
-        "top_customers_names": top_customers_names,
-        "top_customers_sales": top_customers_sales,
+        "sales_date": json.dumps(sales_date),                 # JSON-safe
+        "sales_totals_by_date": json.dumps(sales_totals_by_date),
+        "total_locations": total_locations,
+        "payment_totals_by_date": json.dumps(payment_totals_by_date),
     }
     return render(request, 'wmaApp/dashboard.html',context)
 

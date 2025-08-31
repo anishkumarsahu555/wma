@@ -53,7 +53,25 @@
     .teal-card { background: linear-gradient(135deg, #06beb6, #48b1bf)!important;; }
     .purple-card { background: linear-gradient(135deg, #8e2de2, #4a00e0)!important;; }
     .orange-card { background: linear-gradient(135deg, #f7971e, #ffd200)!important;; }
-
+    .pink-card {
+        background: linear-gradient(135deg, #ff758c, #ff7eb3) !important;
+    }
+        .navy-card {
+            background: linear-gradient(135deg, #193038, #2a4d5a) !important;
+            color: #fff;
+        }
+    .gold-card {
+        background: linear-gradient(135deg, #d4af37, #fceabb) !important;
+        color: #333;
+    }
+    .grape-card {
+        background: linear-gradient(135deg, #41295a, #2f0743) !important;
+        color: #fff;
+    }
+    .lime-card {
+        background: linear-gradient(135deg, #a8e063, #56ab2f) !important;
+        color: #fff;
+    }
     /* Button tweaks */
     .ui.button {
         border-radius: 2rem !important;
@@ -91,12 +109,12 @@
                             <div class="ui right floated header">
                                 <i class="users icon"></i>
                             </div>
-                            <div class="header" id="customerCount">0</div>
-                            <div class="meta">Total Parties</div>
-                            <div class="description">Total number of Parties.</div>
+                            <div class="header" id="customerCount">{{total_customers}}</div>
+                            <div class="meta">Total Customers</div>
+                            <div class="description">Total number of Customers.</div>
                         </div>
                         <div class="extra content">
-                            <a class="ui inverted red button fluid">More Info</a>
+                            <a class="ui inverted red button fluid" href="{% url 'wmaApp:manage_customer' %}">More Info</a>
                         </div>
                     </div>
                 </div>
@@ -108,12 +126,12 @@
                             <div class="ui right floated header">
                                 <i class="user tie icon"></i>
                             </div>
-                            <div class="header" id="salesCount">0</div>
+                            <div class="header" id="staffCount">{{total_staff}}</div>
                             <div class="meta">Total Users</div>
                             <div class="description">Total number of Staff users.</div>
                         </div>
                         <div class="extra content">
-                            <a class="ui inverted green button fluid">More Info</a>
+                            <a class="ui inverted green button fluid" href="{% url 'wmaApp:manage_staff' %}">More Info</a>
                         </div>
                     </div>
                 </div>
@@ -125,12 +143,27 @@
                             <div class="ui right floated header">
                                 <i class="map marker alternate icon"></i>
                             </div>
-                            <div class="header" id="todayInstallmentCount">0</div>
-                            <div class="meta">Geolocation Service</div>
+                            <div class="header" id="location">{{total_locations}}</div>
+                            <div class="meta">Locations</div>
                             <div class="description">Number of location service used.</div>
                         </div>
                         <div class="extra content">
-                            <a class="ui inverted teal button fluid">More Info</a>
+                            <a class="ui inverted teal button fluid" href="{% url 'wmaApp:manage_location' %}">More Info</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="four wide computer eight wide tablet sixteen wide mobile column">
+                    <div class="ui fluid card dashboard-card pink-card">
+                        <div class="content">
+                            <div class="ui right floated header">
+                                <i class="truck icon"></i>
+                            </div>
+                            <div class="header" id="jars"><span><span>{{jars_in}}</span> IN </span> -- <span>{{jars_out}}<span></span> OUT</span></div>
+                            <div class="meta">Today's Jars Count</div>
+                            <div class="description">Total numbers of Jars In and Out.</div>
+                        </div>
+                        <div class="extra content">
+                            <a class="ui inverted pink button fluid" href="{% url 'wmaApp:manage_jars' %}">More Info</a>
                         </div>
                     </div>
                 </div>
@@ -142,12 +175,12 @@
                             <div class="ui right floated header">
                                 <i class="hand holding usd icon"></i>
                             </div>
-                            <div class="header" id="collection">0</div>
+                            <div class="header" id="collection">₹ {{payments_today}}</div>
                             <div class="meta">Today's Collection</div>
                             <div class="description">Total amount of collections.</div>
                         </div>
                         <div class="extra content">
-                            <a class="ui inverted purple button fluid">More Info</a>
+                            <a class="ui inverted purple button fluid" href="{% url 'wmaApp:manage_payments' %}">More Info</a>
                         </div>
                     </div>
                 </div>
@@ -157,51 +190,37 @@
                     <div class="ui fluid card dashboard-card orange-card">
                         <div class="content">
                             <div class="ui right floated header">
-                                <i class="shopping cart icon"></i>
+                                <i class="coins icon"></i>
                             </div>
-                            <div class="header" id="sale">0</div>
-                            <div class="meta">Today's Sales</div>
-                            <div class="description">Total amount of sales.</div>
+                            <div class="header" id="expense">₹ {{total_expense}}</div>
+                            <div class="meta">Today's Expenses</div>
+                            <div class="description">Total amount of expenses.</div>
                         </div>
                         <div class="extra content">
-                            <a class="ui inverted orange button fluid">More Info</a>
+                            <a class="ui inverted orange button fluid" href="{% url 'wmaApp:manage_expense' %}">More Info</a>
                         </div>
                     </div>
                 </div>
                 <div class="four wide computer eight wide tablet sixteen wide mobile column">
-                    <div class="ui fluid card dashboard-card orange-card">
+                    <div class="ui fluid card dashboard-card lime-card">
                         <div class="content">
                             <div class="ui right floated header">
-                                <i class="shopping cart icon"></i>
+                                <i class="receipt icon"></i>
                             </div>
-                            <div class="header" id="sale">0</div>
+                            <div class="header" id="sale"> ₹ {{total_sales}}</div>
                             <div class="meta">Today's Sales</div>
                             <div class="description">Total amount of sales.</div>
                         </div>
                         <div class="extra content">
-                            <a class="ui inverted orange button fluid">More Info</a>
+                            <a class="ui inverted yellow button fluid" href="{% url 'wmaApp:manage_sale' %}">More Info</a>
                         </div>
                     </div>
                 </div>
-                <div class="four wide computer eight wide tablet sixteen wide mobile column">
-                    <div class="ui fluid card dashboard-card orange-card">
-                        <div class="content">
-                            <div class="ui right floated header">
-                                <i class="shopping cart icon"></i>
-                            </div>
-                            <div class="header" id="sale">0</div>
-                            <div class="meta">Today's Sales</div>
-                            <div class="description">Total amount of sales.</div>
-                        </div>
-                        <div class="extra content">
-                            <a class="ui inverted orange button fluid">More Info</a>
-                        </div>
-                    </div>
-                </div>
+
                 <div class="eight wide computer eight wide tablet sixteen wide mobile column">
                     <div class="ui segment chart-card">
                         <h5>OVERVIEW</h5>
-                        <h3>Sales value</h3>
+                        <h3>Sales value for past 7 days</h3>
                         <div class="chart-wrap">
                             <canvas id="salesChart"></canvas>
                         </div>
@@ -210,7 +229,7 @@
                 <div class="eight wide computer eight wide tablet sixteen wide mobile column">
                     <div class="ui segment chart-card">
                         <h5>PERFORMANCE</h5>
-                        <h3>Total orders</h3>
+                        <h3>Payments value for past 7 days</h3>
                         <div class="chart-wrap">
                             <canvas id="ordersChart"></canvas>
                         </div>
@@ -237,7 +256,7 @@
         const chartOpts = {
             responsive: true, maintainAspectRatio: true, aspectRatio: 2.1,
             plugins: {
-                legend: { display: false }
+                legend: { display: true }
             },
             scales: {
                 x: { grid: { display: false } },
@@ -245,13 +264,15 @@
             }
         };
         // Sales Line Chart
+        var x ={{sales_totals_by_date|safe}};
+        var y = {{sales_date|safe}};
         new Chart(document.getElementById('salesChart'), {
             type: 'line',
             data: {
-                labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+                labels: y,
                 datasets: [{
                     label: 'Sales',
-                    data: [5,20,15,30,25,60],
+                    data: x,
                     borderColor: '#4a00e0',
                     backgroundColor: 'rgba(74,0,224,0.10)',
                     fill: true,
@@ -262,13 +283,15 @@
             options: chartOpts
         });
         // Orders Bar Chart
+        var a ={{payment_totals_by_date|safe}};
+        var b = {{sales_date|safe}};
         new Chart(document.getElementById('ordersChart'), {
             type: 'bar',
             data: {
-                labels: ['Mon','Tue','Wed','Thu','Fri','Sat'],
+                labels: b,
                 datasets: [{
-                    label: 'Orders',
-                    data: [25,20,30,22,15,29],
+                    label: 'Payments',
+                    data: a,
                     backgroundColor: '#ff4b2b',
                     borderRadius: 9
                 }]
