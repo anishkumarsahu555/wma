@@ -11,6 +11,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
+from utils.check_group_with_authentication import check_groups
 from utils.get_user_id_detail import get_owner_id
 from utils.logger import logger
 from .models import *
@@ -22,7 +23,6 @@ def change_password_api(request):
     if request.method == 'POST':
         try:
             password = request.POST.get('password')
-            print(password)
             logger.info(
                 f"Password change request received for user {request.user.username}"
             )
@@ -86,7 +86,7 @@ def homepage(request):
     else:
         return redirect("wmaApp:login_page")
 
-
+@check_groups('Owner','Manager','Admin', 'Driver')
 def dashboard(request):
     logger.info("Dashboard called")
     today = datetime.datetime.today()
@@ -152,6 +152,7 @@ def dashboard(request):
 def admin_home(request):
     return render(request, 'admin_home.html')
 
+@check_groups('Owner','Manager','Admin')
 def manage_staff(request):
     logger.info("Manage staff called")
     groups = UserGroup.objects.filter(isDeleted=False)
@@ -161,7 +162,7 @@ def manage_staff(request):
     }
     return render(request, 'wmaApp/staff/manage_staff.html',context)
 
-
+@check_groups('Owner','Manager','Admin', 'Driver')
 def manage_customer(request):
     logger.info("Manage customer called")
     location = Location.objects.filter(isDeleted=False,  ownerID_id=get_owner_id(request))
@@ -171,37 +172,44 @@ def manage_customer(request):
     }
     return render(request, 'wmaApp/customer/manage_customer.html', context)
 
-
+@check_groups('Owner','Manager','Admin')
 def manage_supplier(request):
     return render(request, 'wmaApp/manage_supplier.html')
 
+@check_groups('Owner','Manager','Admin', 'Driver')
 def manage_location(request):
     logger.info("Manage location called")
     return render(request, 'wmaApp/location/manage_locations.html')
 
-
+@check_groups('Owner','Manager','Admin', 'Driver')
 def manage_orders(request):
     return render(request, 'wmaApp/manage_orders.html')
 
+@check_groups('Owner','Manager','Admin', 'Driver')
 def manage_profile(request):
     return render(request, 'wmaApp/profile/manage_profile.html')
 
+@check_groups('Owner','Manager','Admin')
 def manage_expense_group(request):
     logger.info("Manage expense group called")
     return render(request, 'wmaApp/expense_group/manage_expense_group.html')
 
+@check_groups('Owner','Manager','Admin')
 def manage_category(request):
     logger.info("Manage category called")
     return render(request, 'wmaApp/inventory/manage_category.html')
 
+@check_groups('Owner','Manager','Admin')
 def manage_unit(request):
     logger.info("Manage unit called")
     return render(request, 'wmaApp/inventory/manage_units.html')
 
+@check_groups('Owner','Manager','Admin')
 def manage_hsn_and_tax(request):
     logger.info("Manage HSN and Tax called")
     return render(request, 'wmaApp/inventory/manage_tax_and_hsn.html')
 
+@check_groups('Owner','Manager','Admin')
 def manage_product(request):
     logger.info("Manage product called")
     categories = Category.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request))
@@ -216,10 +224,12 @@ def manage_product(request):
 
     return render(request, 'wmaApp/inventory/manage_products.html', context)
 
+@check_groups('Owner','Manager','Admin', 'Driver')
 def add_sale(request):
     logger.info("Add sale called")
     return render(request, 'wmaApp/sales/add_sales.html')
 
+@check_groups('Owner','Manager','Admin', 'Driver')
 def sales_list(request):
     logger.info("Sales list called")
     staffs = StaffUser.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request))
@@ -228,6 +238,7 @@ def sales_list(request):
     }
     return render(request, 'wmaApp/sales/sales_list.html', context)
 
+@check_groups('Owner','Manager','Admin')
 def edit_sale(request, id=None):
     logger.info("Edit sale called")
     object = get_object_or_404(Sales, pk=id, isDeleted=False, ownerID_id=get_owner_id(request))
@@ -239,6 +250,7 @@ def edit_sale(request, id=None):
     }
     return render(request, 'wmaApp/sales/edit_sales.html', context)
 
+@check_groups('Owner','Manager','Admin', 'Driver')
 def manage_expense(request):
     logger.info("Manage expense called")
     instances = ExpenseGroup.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request))
@@ -248,14 +260,17 @@ def manage_expense(request):
 
     return render(request, 'wmaApp/expenditure/manage_expenditure.html', context)
 
+@check_groups('Owner','Manager','Admin', 'Driver')
 def manage_jars(request):
     logger.info("Manage jars is called")
     return render(request, 'wmaApp/jars/manage_jars.html',)
 
+@check_groups('Owner','Manager','Admin', 'Driver')
 def manage_payments(request):
     logger.info("Manage payments is called")
     return render(request, 'wmaApp/payments/manage_payments.html',)
 
+@check_groups('Owner','Manager','Admin', 'Driver')
 def my_profile(request):
     instance = get_object_or_404(StaffUser, userID_id=request.user.pk)
     context = {
