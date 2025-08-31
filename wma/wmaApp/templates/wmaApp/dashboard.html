@@ -1,5 +1,6 @@
 {% extends 'wmaApp/baseIndex.html' %}
 {% load static %}
+{% load custom_has_group_tag %}
 {% block title %}
 <title>Dashboard</title>
 {% endblock %}
@@ -103,6 +104,7 @@
 
             <div class="ui grid stackable padded">
                 <!-- Total Parties -->
+                {% if request.user|has_group:"Admin" or request.user|has_group:"Manager" or request.user|has_group:"Owner" %}
                 <div class="four wide computer eight wide tablet sixteen wide mobile column">
                     <div class="ui fluid card dashboard-card red-card">
                         <div class="content">
@@ -152,6 +154,8 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
+
                 <div class="four wide computer eight wide tablet sixteen wide mobile column">
                     <div class="ui fluid card dashboard-card pink-card">
                         <div class="content">

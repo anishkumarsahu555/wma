@@ -47,6 +47,59 @@
         </div>
         <div class="ui tab " data-tab="user">
             <div class="row" style="padding-left: 5px; padding-right: 5px">
+                <div class="ui  form">
+                    <form class="ui tiny form" style="text-align:left">
+                        <div class=" fields">
+                            <div class="four wide field" style="width: 30%">
+                                <label>Start Date</label>
+                                <div class="ui calendar" id="rangestart">
+                                    <div class="ui input left icon">
+
+                                        <input class="" type="text" placeholder="Start Date"
+                                               style="width:100%;"
+                                               id="startDateF" onchange="ChangeDate()">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="three wide field" style="width: 30%">
+                                <label>End Date</label>
+                                <div class="ui calendar" id="rangeend">
+                                    <div class="ui input left icon">
+
+                                        <input class="" type="text" placeholder="End Date"
+                                               style="width:100%;"
+                                               id="endDateF">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="three wide  field" style="width: 40%">
+                                <label>Staff</label>
+                                <select class="ui fluid search dropdown" id="staffID" onchange="ChangeDate()">
+                                    <option value="All">All</option>
+                                    {% for staff in staffs %}
+                                    <option value="{{ staff.id }}">{{ staff.name|capfirst }}
+                                    </option>
+                                    {% endfor %}
+
+
+                                </select>
+                            </div>
+                            <div class="seven wide field">
+                                <label>Action</label>
+                                <button class="ui tiny active button" type="button"
+                                        onclick="filterDetails()">
+                                    <i class="funnel dollar icon"></i>
+                                    Search
+                                </button>
+                                <!--                                    <a id="reportUrl"-->
+                                <!--                                       href=""-->
+                                <!--                                       style="float: right;"-->
+                                <!--                                       class="teal tiny ui button">Download Report-->
+                                <!--                                    </a>-->
+                            </div>
+                        </div>
+                    </form>
+                </div>
                 <div class="wide">
                     <table class="ui blue unstackable tiny sortable celled very nowrap very compact table" id="UserTable"
                            style="margin-top: 5px;width: 100%">
@@ -188,6 +241,37 @@
 
 {% block js %}
 <script>
+    var today = new Date();
+    $('#rangestart').calendar({
+        initialDate: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
+        monthFirst: false,
+        type: 'date',
+        endCalendar: $('#rangeend'),
+        formatter: {
+            date: function (date, settings) {
+                if (!date) return '';
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                return day + '/' + month + '/' + year;
+            }
+        }
+    });
+    $('#rangeend').calendar({
+        initialDate: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
+        monthFirst: false,
+        type: 'date',
+        startCalendar: $('#rangestart'),
+        formatter: {
+            date: function (date, settings) {
+                if (!date) return '';
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                return day + '/' + month + '/' + year;
+            }
+        }
+    });
 
     var userTab;
 
@@ -518,6 +602,14 @@
 
     function myOwnReset(){
         $('.ui.form').form('reset');
+    }
+
+    function filterDetails() {
+        var startDate = $('#startDateF').val();
+        var endDate = $('#endDateF').val();
+        var staffID = $('#staffID').val();
+        userTab.ajax.url('{% url 'wma_api:PaymentListJson' %}?startDate=' + startDate + '&endDate=' + endDate + '&staffID=' + staffID).load();
+
     }
 </script>
 

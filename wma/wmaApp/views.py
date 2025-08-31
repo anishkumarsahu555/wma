@@ -89,29 +89,65 @@ def homepage(request):
 @check_groups('Owner','Manager','Admin', 'Driver')
 def dashboard(request):
     logger.info("Dashboard called")
-    today = datetime.datetime.today()
     owner_id = get_owner_id(request)
-    payments_today = Payment.objects.filter(paymentDate=today, isDeleted=False, ownerID_id=owner_id).aggregate(total=Sum('paymentAmount'))['total'] or 0
-    jars_in = JarCounter.objects.filter(date=today,ownerID_id=owner_id, isDeleted=False).aggregate(total=Sum('inJar'))['total'] or 0
-    jars_out = JarCounter.objects.filter(date=today,ownerID_id=owner_id, isDeleted=False).aggregate(total=Sum('outJar'))['total'] or 0
-    total_expense = Expense.objects.filter(isDeleted=False,ownerID_id=owner_id, expenseDate=today).aggregate(total=Sum('expenseAmount'))['total'] or 0
-    total_sales = Sales.objects.filter(isDeleted=False,ownerID_id=owner_id, saleDate=today).aggregate(total=Sum('totalAmount'))['total'] or 0
-    total_customers = Customer.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
-    total_staff = StaffUser.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
-    total_suppliers = Supplier.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
-    total_locations = Location.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
+    today = datetime.datetime.today()
+    if 'Driver' not in request.user.groups.values_list('name', flat=True):
 
-    today = timezone.now().date()
-    seven_days_ago = today - datetime.timedelta(days=6)  # last 7 days including today
+        payments_today = Payment.objects.filter(paymentDate=today, isDeleted=False, ownerID_id=owner_id).aggregate(total=Sum('paymentAmount'))['total'] or 0
+        jars_in = JarCounter.objects.filter(date=today,ownerID_id=owner_id, isDeleted=False).aggregate(total=Sum('inJar'))['total'] or 0
+        jars_out = JarCounter.objects.filter(date=today,ownerID_id=owner_id, isDeleted=False).aggregate(total=Sum('outJar'))['total'] or 0
+        total_expense = Expense.objects.filter(isDeleted=False,ownerID_id=owner_id, expenseDate=today).aggregate(total=Sum('expenseAmount'))['total'] or 0
+        total_sales = Sales.objects.filter(isDeleted=False,ownerID_id=owner_id, saleDate=today).aggregate(total=Sum('totalAmount'))['total'] or 0
+        total_customers = Customer.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
+        total_staff = StaffUser.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
+        total_suppliers = Supplier.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
+        total_locations = Location.objects.filter(isDeleted=False,ownerID_id=owner_id).count()
 
-    # Get sales grouped by date
-    sales_data = (
-    Sales.objects.filter(saleDate__range=[seven_days_ago, today], isDeleted=False, ownerID_id=owner_id)
-    .values("saleDate")  # directly group by date
-    .annotate(total=Sum("totalAmountAfterTax"))
-    .order_by("saleDate")
-    )
-    from collections import defaultdict
+        today = timezone.now().date()
+        seven_days_ago = today - datetime.timedelta(days=6)  # last 7 days including today
+
+        # Get sales grouped by date
+        sales_data = (
+        Sales.objects.filter(saleDate__range=[seven_days_ago, today], isDeleted=False, ownerID_id=owner_id)
+        .values("saleDate")  # directly group by date
+        .annotate(total=Sum("totalAmountAfterTax"))
+        .order_by("saleDate")
+        )
+        # Get sales grouped by date
+        payment_data = (
+            Payment.objects.filter(paymentDate__range=[seven_days_ago, today], isDeleted=False, ownerID_id=owner_id)
+            .values("paymentDate")  # directly group by date
+            .annotate(total=Sum("paymentAmount"))
+            .order_by("paymentDate")
+        )
+    else:
+        payments_today = Payment.objects.filter(paymentDate=today, isDeleted=False, ownerID_id=owner_id, addedByID__userID_id=request.user.pk).aggregate(total=Sum('paymentAmount'))['total'] or 0
+        jars_in = JarCounter.objects.filter(date=today,ownerID_id=owner_id, isDeleted=False, addedByID__userID_id=request.user.pk).aggregate(total=Sum('inJar'))['total'] or 0
+        jars_out = JarCounter.objects.filter(date=today,ownerID_id=owner_id, isDeleted=False, addedByID__userID_id=request.user.pk).aggregate(total=Sum('outJar'))['total'] or 0
+        total_expense = Expense.objects.filter(isDeleted=False,ownerID_id=owner_id, expenseDate=today, staffID__userID_id=request.user.pk ).aggregate(total=Sum('expenseAmount'))['total'] or 0
+        total_sales = Sales.objects.filter(isDeleted=False,ownerID_id=owner_id, saleDate=today, addedByID__userID_id=request.user.pk).aggregate(total=Sum('totalAmount'))['total'] or 0
+        total_customers = 0
+        total_staff = 0
+        total_suppliers = 0
+        total_locations =0
+
+        today = timezone.now().date()
+        seven_days_ago = today - datetime.timedelta(days=6)  # last 7 days including today
+
+        # Get sales grouped by date
+        sales_data = (
+            Sales.objects.filter(saleDate__range=[seven_days_ago, today], isDeleted=False, ownerID_id=owner_id)
+            .values("saleDate")  # directly group by date
+            .annotate(total=Sum("totalAmountAfterTax"))
+            .order_by("saleDate")
+        )
+        # Get sales grouped by date
+        payment_data = (
+            Payment.objects.filter(paymentDate__range=[seven_days_ago, today], isDeleted=False, ownerID_id=owner_id)
+            .values("paymentDate")  # directly group by date
+            .annotate(total=Sum("paymentAmount"))
+            .order_by("paymentDate")
+        )
 
     # Convert to dict for quick lookup
     sales_dict = {entry["saleDate"]: entry["total"] for entry in sales_data}
@@ -121,13 +157,7 @@ def dashboard(request):
     sales_totals_by_date = [sales_dict.get(d, 0) for d in final_dates]
 
 
-    # Get sales grouped by date
-    payment_data = (
-        Payment.objects.filter(paymentDate__range=[seven_days_ago, today], isDeleted=False, ownerID_id=owner_id)
-        .values("paymentDate")  # directly group by date
-        .annotate(total=Sum("paymentAmount"))
-        .order_by("paymentDate")
-    )
+
     # Convert to dict for quick lookup
     payment_dict = {entry["paymentDate"]: entry["total"] for entry in payment_data}
     payment_totals_by_date = [payment_dict.get(d, 0) for d in final_dates]

@@ -151,7 +151,9 @@ class StaffUserListJson(BaseDatatableView):
         json_data = []
         for item in qs:
             images = '<img class="ui avatar image" src="{}">'.format(item.profile_pic.thumb.url)
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -295,7 +297,9 @@ class LocationListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -459,7 +463,9 @@ class ExpenseGroupListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -686,7 +692,9 @@ class CustomerListJson(BaseDatatableView):
         json_data = []
         for item in qs:
             images = '<img class="ui avatar image" src="{}">'.format(item.profile_pic.thumb.url)
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -823,7 +831,9 @@ class CategoryListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -986,7 +996,9 @@ class UnitListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -1147,7 +1159,9 @@ class HSNTAXListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -1326,7 +1340,9 @@ class ProductListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -1550,7 +1566,9 @@ class SalesListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<a href="/edit_sale/{}/" data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </a>
@@ -1684,7 +1702,23 @@ class ExpenseListJson(BaseDatatableView):
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return Expense.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(self.request))
+        owner_id = get_owner_id(self.request)
+        try:
+            startDateV = self.request.GET.get("startDate")
+            endDateV = self.request.GET.get("endDate")
+            staffID = self.request.GET.get("staffID")
+            sDate = datetime.strptime(startDateV, '%d/%m/%Y')
+            eDate = datetime.strptime(endDateV, '%d/%m/%Y')
+            if staffID == 'All':
+                return Expense.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id,expenseDate__range=[sDate.date(), eDate.date()])
+            else:
+                return Expense.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, expenseDate_range=[sDate.date(), eDate.date()],
+                                                               staffID_id=int(staffID))
+
+
+        except:
+            return Expense.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, expenseDate__icontains=datetime.today().date())
+
 
     def filter_queryset(self, qs):
 
@@ -1702,7 +1736,9 @@ class ExpenseListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -1878,7 +1914,9 @@ class JarListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
@@ -2055,7 +2093,9 @@ class PaymentListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if 'Owner' or 'Manager' in self.request.user.groups.values_list('name', flat=True):
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
