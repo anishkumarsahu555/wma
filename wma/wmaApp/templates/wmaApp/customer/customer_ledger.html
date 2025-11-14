@@ -1,0 +1,397 @@
+{% extends "wmaApp/baseIndex.html" %}
+{% load static %}
+{% block title %}
+<title>Manage Customer</title>
+{% endblock %}
+{% block css %}
+{% endblock %}
+{% block body %}
+
+<style>
+    .avatar-upload {
+        position: relative;
+        max-width: 115px;
+        margin: 5px auto;
+    }
+
+    .avatar-upload .avatar-edit {
+        position: absolute;
+        right: 12px;
+        z-index: 1;
+        top: 10px;
+    }
+
+    .avatar-upload .avatar-edit input {
+        display: none;
+    }
+
+    .avatar-upload .avatar-edit input + label {
+        display: inline-block;
+        width: 25px;
+        height: 25px;
+        margin-bottom: 0;
+        border-radius: 100%;
+        background: #FFFFFF;
+        border: 1px solid transparent;
+        box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.12);
+        cursor: pointer;
+        font-weight: normal;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .avatar-upload .avatar-edit input + label:hover {
+        background: #f1f1f1;
+        border-color: #d6d6d6;
+    }
+
+    .avatar-upload .avatar-edit input + label:after {
+        color: #757575;
+        position: absolute;
+        top: 10px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        margin: auto;
+
+    }
+
+    .avatar-upload .avatar-preview {
+        width: 100px;
+        height: 100px;
+        position: relative;
+        border-radius: 100%;
+        border: 6px solid #F8F8F8;
+        box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.1);
+    }
+
+    .avatar-upload .avatar-preview > div {
+        width: 100%;
+        height: 100%;
+        border-radius: 100%;
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+
+
+    #UserTable_length {
+        left: 20px;
+        position: absolute;
+    }
+
+    #UserTable_filter {
+        width: 50%;
+        float: right;
+    }
+
+    .dt-buttons {
+        position: absolute;
+        left: 130px;
+    }
+    .dt-length{
+        position: absolute;
+    }
+
+    input[type=search] {
+        width: 100px !important;
+    }
+</style>
+
+<div class="ui right aligned basic  grid">
+    <div class="sixteen wide column">
+        <div class="ui  pointing secondary menu">
+            <div style="cursor: pointer;" class="item active" data-tab="user"
+            >Customer Users List
+            </div>
+            <div style=" position: absolute;right: 1.5rem;top: 18px;">
+                <button class="ui green mini plus button right" onclick="showUserModal()">
+                    <i class="plus square outline icon"></i>
+                    Add Customer User
+                </button>
+            </div>
+        </div>
+        <div class="ui tab " data-tab="user">
+
+            <div class="row" style="padding-left: 5px; padding-right: 5px">
+                <form class="ui  small form " id="addForm" style="text-align: left">{% csrf_token %}
+                    <div class="two unstackable fields ">
+                        <div class="ten wide field required">
+                            <label>Customer Name</label>
+                            <select class="ui clearable search dropdown" id="customer">
+                                <option value="">Search By Customer Name</option>
+                            </select>
+                        </div>
+                        <div class="six wide field required" >
+                            <label>Date</label>
+                            <div class="ui calendar" id="saleDate">
+                                <div class="ui input left icon">
+                                    <input type="text" placeholder="Date" name="saleDateVal" id="saleDateVal">
+                                    <i class="calendar icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+                <div class="wide">
+
+                    <table class="ui blue unstackable tiny sortable celled very nowrap very compact table" id="UserTable"
+                           style="margin-top: 5px;width: 100%">
+                        <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>CustomerID</th>
+                            <th>Name</th>
+                            <th>Location</th>
+                            <th>PhoneNo.</th>
+                            <th>Address</th>
+                            <th>AddedBy</th>
+                            <th>Added On</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="ui modal" id="myModalUser">
+                    <i class="close icon"></i>
+                    <div class="header">
+                        Add Customer User
+                    </div>
+                    <div class="content">
+
+                        <form class="ui tiny form" id="addForm">{% csrf_token %}
+                            <div class="one fields required">
+                                <div class="sixteen wide field">
+                                    <label>Photo</label>
+
+                                    <div class="ui" style="width: 100%; text-align: center">
+                                        <div class="ui icon header">
+                                            <div class="inline ">
+
+                                                <div class="avatar-upload">
+                                                    <div class="avatar-edit">
+                                                        <input type='file' id="imageUpload" name="photo"
+                                                               accept=".png, .jpg, .jpeg"/>
+                                                        <label for="imageUpload"><i class="edit icon"
+                                                                                    style="font-size: 1rem;padding: 0.4rem"></i>
+                                                        </label>
+                                                    </div>
+                                                    <div class="avatar-preview">
+                                                        <div id="cImg"
+                                                             style="background-image: url('https://cdn-icons.flaticon.com/png/512/4785/premium/4785452.png?token=exp=1651559899~hmac=8bd1641cd72c54268deafab8b26dd7a9');">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="one required fields">
+                                <div class="sixteen wide field">
+                                    <label>Name</label>
+                                    <input type="text" name="Name" placeholder="Full Name" id="CompanyUserName">
+                                </div>
+
+                            </div>
+
+                            <div class="two fields">
+                                <div class="field required">
+                                    <label>Phone No.</label>
+                                    <input type="number" name="Phone" id="UserPhoneNo" placeholder="Phone Number">
+                                </div>
+                                <div class="field">
+                                    <label>Email</label>
+                                    <input type="text" placeholder="Email Address" name="Email" id="UserEmail">
+                                </div>
+                            </div>
+
+                            <div class="field">
+
+                                <div class="required fields">
+
+                                    <div class="sixteen wide field">
+                                        <label>Address</label>
+                                        <input type="text" name="shipping[address]" placeholder="Full Address"
+                                               id="UserAddress">
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class="one fields">
+                                <div class="sixteen wide field required">
+                                    <label>Location/Locality</label>
+                                    <select class="ui fluid dropdown" id="UserGroup">
+                                        <option value="" hidden>Location/Locality</option>
+                                        {% for loc in locations %}
+                                        <option value="{{ loc.id }}">{{ loc.name|capfirst }}</option>
+                                        {% endfor %}
+
+
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+
+                        <div class="actions" style="padding-top: 20px; padding-bottom: 20px ;float: right">
+                            <div class="ui cancel button">Cancel</div>
+                            <button class="ui right labeled icon button green saveBtn" onclick="addUser()">
+                                Submit
+                                <i class="checkmark icon"></i>
+                            </button>
+                            <button style="display: none" class="ui right labeled icon button green saveBtnLoad" >
+                                Saving ...
+                                <i class="checkmark icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui basic modal custom" id="deleteUser">
+                <div class="ui icon header">
+                    <i class="archive icon"></i>
+                    Customer Details will be Deleted
+                </div>
+                <div class="content">
+                    <p style="text-align: center">The Customer will be deleted, are you sure to delete this Customer?</p>
+                </div>
+                <div class="actions">
+                    <div class="ui red basic cancel inverted button">
+                        <i class="remove icon"></i>
+                        No
+                    </div>
+                    <input type="hidden" id="UserID">
+                    <div class="ui green ok inverted button" onclick="deleteUser()">
+                        <i class="checkmark icon"></i>
+                        Yes
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+
+
+    $(getCustomerList());
+
+
+    function getCustomerList() {
+        $.ajax({
+            type: 'get',
+            url: "{% url 'wma_api_cached:customer_list_api_cached' %}",
+
+            success: function (response) {
+                console.log(response);
+
+                $('#customer').html('');
+                $('#customer').append(' <option value="">Search By Customer Name</option>');
+                var j;
+                for (j = 0; j < response.data.length; j++) {
+
+                    $('#customer').append('<option value="' + response.data[j]['ID'] + '" >' + response.data[j]['DisplayDetail'] + '</option>');
+
+                }
+
+            },
+
+            error: function () {
+                $('body')
+                    .toast({
+                        class: 'error',
+                        message: 'An error occurred !'
+                    })
+                ;
+            }
+        });
+
+
+    }
+
+    var userTab;
+
+
+    function showUserModal() {
+        $('#myModalUser').modal('show');
+        myOwnReset();
+    }
+
+    function EditUser() {
+        $('')
+    }
+
+
+    // user Details
+
+    userTab = $('#UserTable').DataTable({
+        dom: 'Blfrtip',
+        "scrollY": "350px",
+        "scrollX": true,
+        fixedColumns: {
+            left: 1,
+            right: 1
+        },
+        buttons: [{
+            extend: 'excel',
+            exportOptions: {
+                columns: [1, 2, 3, 4, 5, 6, 7]
+            }
+        }
+
+        ],
+        language: {
+            lengthMenu: "_MENU_ entries"
+        },
+        "columnDefs": [
+            {"name": "photo", "targets": 0, "orderable": false},
+            {"name": "customerId", "targets": 1, "orderable": true},
+            {"name": "name", "targets": 2, "orderable": true},
+            {"name": "locationID", "targets": 3, "orderable": true},
+            {"name": "phone", "targets": 4, "orderable": true},
+            {"name": "address", "targets": 5, "orderable": true},
+            {"name": "addedByID", "targets": 6, "orderable": true},
+            {"name": "datetime", "targets": 7, "orderable": true},
+            {"name": "action", "targets": 8, "orderable": false}
+        ],
+        aaSorting: [[7, 'desc']],
+        "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        "pageLength": 10,
+        "processing": true,
+        "serverSide": true,
+        "ajax": "{% url 'wma_api:CustomerListJson' %}"
+    });
+
+
+    $(document).ready(function(){
+        $('.ui.form')
+            .form({
+                fields: {
+                    fileInput:{
+                        identifier: 'name',
+                        rules: [
+                            {
+                                type : 'empty'
+                            }
+                        ]
+                    }
+                }
+            });
+    });
+
+    function myOwnReset(){
+        $('.ui.form').form('reset');
+    }
+</script>
+
+{% endblock %}

@@ -10,6 +10,7 @@ from django.contrib.auth.models import User, Group
 from django_datatables_view.base_datatable_view import BaseDatatableView
 
 from utils.custom_response import SuccessResponse, ErrorResponse
+from utils.customer_ledger_generator import generate_customer_ledger
 from utils.get_user_id_detail import get_owner_id, get_user_id
 from utils.json_validator import validate_input
 from wmaApp.models import *
@@ -25,12 +26,14 @@ def add_staff_api(request):
     owner_id = get_owner_id(request)
     try:
         profile_pic = request.FILES.get('profile_pic')
-        # Get the UserGroup instance
-        try:
-            user_group = UserGroup.objects.get(name=data['group'], isDeleted=False, ownerID_id=owner_id)
-        except UserGroup.DoesNotExist:
-            logger.error(f"UserGroup '{data['group']}' does not exist")
-            return ErrorResponse(f"UserGroup '{data['group']}' does not exist").to_json_response()
+        # Get or create the UserGroup instance
+        user_group, created = UserGroup.objects.get_or_create(
+            name=data['group'],
+            ownerID_id=owner_id,
+            defaults={'isDeleted': False}
+        )
+        if created:
+            logger.info(f"Created new UserGroup: {data['group']}")
             
         staff = StaffUser(
             name=data['name'],
@@ -695,12 +698,16 @@ class CustomerListJson(BaseDatatableView):
             if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
                     'Manager' in self.request.user.groups.values_list('name', flat=True)or \
                     'Admin' in self.request.user.groups.values_list('name', flat=True):
-                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                action = '''
+                <a href="/detail_sale/{}/" data-inverted="" data-tooltip="View Ledger" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button pink">
+                   <i class="book reader icon"></i>
+                  </a> 
+                <button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
                   </button>
                   <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
                     <i class="trash alternate icon"></i>
-                  </button></td>'''.format(item.pk, item.pk),
+                  </button></td>'''.format(item.pk,item.pk, item.pk),
             else:
                 action = '''<div class="ui tiny label">
                   Denied
@@ -1514,7 +1521,7 @@ def add_sales_api(request):
             p.unit= item_details[6]
             p.ownerID_id = owner_id
             p.save()
-
+        generate_customer_ledger(request,data['customer'], 'credit', obj.totalAmountAfterTax, "New Sales")
         logger.info("Sales created successfully")
         return SuccessResponse("Sales created successfully").to_json_response()
     except Exception as e:
@@ -1570,9 +1577,7 @@ class SalesListJson(BaseDatatableView):
                     'Manager' in self.request.user.groups.values_list('name', flat=True)or \
                     'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''
-                <a href="/detail_sale/{}/" data-inverted="" data-tooltip="View Ledger" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button pink">
-                   <i class="book reader icon"></i>
-                  </a> 
+                
                    <a href="/detail_sale/{}/" data-inverted="" data-tooltip="View Detail" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button orange">
                     <i class="eye icon"></i>
                   </a>
@@ -1581,7 +1586,7 @@ class SalesListJson(BaseDatatableView):
                   </a>
                   <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
                     <i class="trash alternate icon"></i>
-                  </button></td>'''.format(item.pk,item.pk,item.pk, item.pk),
+                  </button></td>'''.format(item.pk,item.pk, item.pk),
 
             else:
                 action = '''<div class="ui tiny label">
@@ -2054,6 +2059,7 @@ def add_payment_api(request):
             addedByID_id = get_user_id(request)
         )
         obj.save()
+        generate_customer_ledger(request,data['customer'], 'debit', obj.paymentAmount, "Payment Received")
         logger.info("Payment record added successfully")
         return SuccessResponse("Payment record added successfully").to_json_response()
     except Exception as e:
@@ -2213,3 +2219,77 @@ def update_payment_api(request):
     except Exception as e:
         logger.error(f"Error while updating Payment: {str(e)}")
         return ErrorResponse("Unable to update Payment. Please try again", status_code=500).to_json_response()
+
+
+# Customer ledger
+
+class CustomerLedgerListJson(BaseDatatableView):
+    order_columns = [ 'addedDate','isCredit','credit','debit' ,'addedByID' ,'remark']
+
+    def get_initial_queryset(self):
+        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
+        owner_id = get_owner_id(self.request)
+        try:
+            startDateV = self.request.GET.get("startDate")
+            endDateV = self.request.GET.get("endDate")
+            customerID = self.request.GET.get("customerID")
+            sDate = datetime.strptime(startDateV, '%d/%m/%Y')
+            eDate = datetime.strptime(endDateV, '%d/%m/%Y')
+            if not customerID:
+                return CustomerLedger.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id,addedDate__range=[sDate.date(), eDate.date()])
+            else:
+                return CustomerLedger.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, addedDate_range=[sDate.date(), eDate.date()],
+                                                                  customerID_id=int(customerID))
+
+
+        except:
+            return Payment.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, paymentDate__icontains=datetime.today().date())
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+                Q(customerID__name__icontains=search)
+                |Q(paymentAmount__icontains=search)
+                |Q(paymentDate__icontains=search)
+                |Q(remark__icontains=search) |Q(customerID__locationID__name__icontains=search)
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+                    'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+                    'Admin' in self.request.user.groups.values_list('name', flat=True):
+                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                    <i class="pen icon"></i>
+                  </button>
+                  <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+                    <i class="trash alternate icon"></i>
+                  </button></td>'''.format(item.pk, item.pk),
+
+            else:
+                action = '''<div class="ui tiny label">
+                  Denied
+                </div>'''
+
+
+            json_data.append([
+                escape(item.customerID.name) + ' - ' + escape(item.customerID.locationID.name),
+                escape( item.paymentAmount),
+                escape(item.isApprove),
+                escape(item.approvedBy.name if item.approvedBy else ''),
+                escape(item.paymentDate.strftime('%d-%m-%Y')),
+                escape(item.addedByID.name if item.addedByID else ''),
+                escape(item.remark),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+                ])
+
+        return json_data
+

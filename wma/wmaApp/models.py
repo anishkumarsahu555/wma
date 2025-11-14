@@ -117,13 +117,15 @@ class CustomerLedger(models.Model):
     balanceAtDate = models.FloatField(default=0.00)
     balance = models.FloatField(default=0.00)
     isDeleted = models.BooleanField(default=False)
+    remark = models.TextField( blank=True, null=True)
+    isCredit = models.BooleanField(default=False)
     addedByID = models.ForeignKey(StaffUser, on_delete=models.CASCADE, null=True, blank=True)
     addedDate = models.DateField(blank=True, null=True)
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
 
     def __str__(self):
-        return self.customerID.name
+        return self.ownerID.name
 
 class TaxAndHsn(models.Model):
     ownerID = models.ForeignKey(Owner, on_delete=models.CASCADE,null=True, blank=True)

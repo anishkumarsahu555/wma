@@ -320,3 +320,8 @@ def my_profile(request):
         'instance': instance
     }
     return render(request, 'wmaApp/profile/my_profile.html', context)
+
+@check_groups('Owner','Manager','Admin', 'Driver')
+def customer_ledger(request):
+    logger.info("Customer Ledger called")
+    return render(request, 'wmaApp/customer/customer_ledger.html')
