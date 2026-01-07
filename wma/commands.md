@@ -4,4 +4,5 @@ pip install uv
    uv init --python 3.12
 3. sync uv
    uv sync
-4. 
+4. add packages
+   uv add weasyprint

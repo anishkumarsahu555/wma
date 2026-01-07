@@ -1,0 +1,263 @@
+{% extends 'wmaApp/baseIndex.html' %}
+{% load static %}
+{% block title %}
+<title>Reports</title>
+{% endblock %}
+{% block css %}
+{% endblock %}
+{% block body %}
+
+<style>
+
+
+    #UserTable_length {
+        left: 20px;
+        position: absolute;
+    }
+
+    #UserTable_filter {
+        width: 50%;
+        float: right;
+    }
+
+    .dt-buttons {
+        position: absolute;
+        left: 130px;
+    }
+    .dt-length{
+        position: absolute;
+    }
+
+    input[type=search] {
+        width: 100px !important;
+    }
+</style>
+
+<div class="ui  right aligned  basic  grid">
+    <div class="sixteen wide column">
+        <div class="ui  pointing secondary menu">
+            <div style="cursor: pointer;" class="item active" data-tab="user"
+            >Reports
+            </div>
+        </div>
+
+        <div class="ui tab " data-tab="user">
+
+            <div class="row" style="padding-left: 5px; padding-right: 5px">
+                <div >
+
+                    <div class="ui  form">
+                        <form class="ui tiny form" style="text-align:left">
+                            <div class=" fields">
+                                <div class="three wide field" style="width: 30%">
+                                    <label>Start Date</label>
+                                    <div class="ui calendar" id="rangestart">
+                                        <div class="ui input left icon">
+
+                                            <input class="" type="text" placeholder="Start Date"
+                                                   style="width:100%;"
+                                                   id="startDateF" name="startDateF">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="three wide field" style="width: 30%">
+                                    <label>End Date</label>
+                                    <div class="ui calendar" id="rangeend">
+                                        <div class="ui input left icon">
+
+                                            <input class="" type="text" placeholder="End Date"
+                                                   style="width:100%;"
+                                                   id="endDateF" name="endDateF">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="four wide  field" style="width: 40%">
+                                    <label>Location</label>
+                                    <select class="ui fluid search dropdown" id="location" name="location">
+                                        <option value="All">All</option>
+                                        {% for location in locations %}
+                                        <option value="{{ location.id }}">{{ location.name|capfirst }}
+                                          </option>
+                                        {% endfor %}                            
+                                    </select>
+                                </div>
+
+                                <div class="four wide  field" style="width: 40%">
+                                    <label>Report Type</label>
+                                    <select class="ui fluid search dropdown" id="reportType" name="reportType">
+                                        <option value="">Select Report Type</option>
+                                        <option value="Sales">Sales Report</option>
+                                        <option value="Jar">Jar Report</option>
+                                        <option value="Expense">Expense Report</option>
+                                        <option value="Collection">collection Report</option>
+                                    </select>
+                                </div>
+                                <div class="two wide field">
+                                    <label>Download</label>
+                                    <button type="button" class="ui tiny green button saveBtn" onclick="downloadReport()">
+                                        <i class="download icon"></i>
+                                        Download
+                                    </button>
+                                    <button id="" style="display: none;" class="ui teal double right labeled icon loading button saveBtnLoad">
+                                Downloading ....
+                                <i class="checkmark icon"></i>
+                            </button>
+
+
+<!--                                    <a id="reportUrl"-->
+<!--                                       href=""-->
+<!--                                       style="float: right;"-->
+<!--                                       class="teal tiny ui button">Download Report-->
+<!--                                    </a>-->
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+
+    var today = new Date();
+    $('#rangestart').calendar({
+        initialDate: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
+        monthFirst: false,
+        type: 'date',
+        endCalendar: $('#rangeend'),
+        formatter: {
+            date: function (date, settings) {
+                if (!date) return '';
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                return day + '/' + month + '/' + year;
+            }
+        }
+    });
+    $('#rangeend').calendar({
+        initialDate: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
+        monthFirst: false,
+        type: 'date',
+        startCalendar: $('#rangestart'),
+        formatter: {
+            date: function (date, settings) {
+                if (!date) return '';
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                return day + '/' + month + '/' + year;
+            }
+        }
+    });
+
+    function filterDetails() {
+        var startDate = $('#startDateF').val();
+        var endDate = $('#endDateF').val();
+        var staffID = $('#staffID').val();
+        userTab.ajax.url('{% url 'wma_api:SalesListJson' %}?startDate=' + startDate + '&endDate=' + endDate + '&staffID=' + staffID).load();
+
+    }
+
+
+    function downloadReport(){
+        showLoading();
+        var startDate = $('#startDateF').val();
+        var endDate = $('#endDateF').val();
+        var location = $('#location').val();
+        var reportType = $('#reportType').val();
+        var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val();
+        debugger;
+        if (reportType===""){
+            $('body')
+                .toast({
+                    class: 'orange',
+                    message: 'Please select Report Type!'
+                })
+            ;
+            hideLoading();
+            return false;
+        }
+
+        // // Build the download URL with parameters
+        // var downloadUrl = "{% url 'wma_api:download_report_pdf' %}?" + 
+        //                  "startDateF=" + encodeURIComponent(startDate) + 
+        //                  "&endDateF=" + encodeURIComponent(endDate) + 
+        //                  "&location=" + encodeURIComponent(location) + 
+        //                  "&reportType=" + encodeURIComponent(reportType);
+        
+        // // Create a temporary link and trigger download
+        // var link = document.createElement('a');
+        // link.href = downloadUrl;
+        // link.download = 'report.pdf';
+        // document.body.appendChild(link);
+        // link.click();
+        // document.body.removeChild(link);
+
+        var formdata = new FormData();
+        formdata.append('startDate', startDate);
+        formdata.append('endDate', endDate);
+        formdata.append('location', location);
+        formdata.append('reportType', reportType);
+        formdata.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
+
+        $.ajax({
+            url: "{% url 'wma_api:download_report_pdf' %}",
+            type: "post",
+            data: formdata,
+            contentType: false,
+            cache: false,
+            processData: false,
+            xhrFields: {
+                responseType: 'blob'
+            },
+
+            success: function (response) {
+                // Create a blob from the response
+                var blob = new Blob([response], { type: 'application/pdf' });
+                var url = window.URL.createObjectURL(blob);
+                
+                // Create a temporary link and trigger download
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = reportType+'-'+startDate+'-'+endDate+'-'+'report.pdf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up the object URL
+                window.URL.revokeObjectURL(url);
+                
+                $('body')
+                    .toast({
+                        class: 'success',
+                        message: 'Report downloaded successfully!'
+                    })
+                ;
+                
+                hideLoading();
+            },
+            error: function () {
+                $('body')
+                    .toast({
+                        class: 'error',
+                        message: 'An error occurred while downloading the report!'
+                    })
+                ;
+                hideLoading();
+            }
+        });
+        
+    }
+
+
+</script>
+
+{% endblock %}

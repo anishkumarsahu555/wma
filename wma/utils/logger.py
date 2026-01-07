@@ -24,8 +24,6 @@ _stop_rotation = False
 LOG_TO_FILE = os.getenv("WRITE_LOG_ON_FILE", "true").lower() == "true"
 LOG_TO_CONSOLE = os.getenv("WRITE_LOG_ON_CONSOLE", "true").lower() == "true"
 
-print(LOG_TO_FILE, LOG_TO_CONSOLE)
-
 def _get_caller_app_name():
     stack = inspect.stack()
     for frame_info in stack:

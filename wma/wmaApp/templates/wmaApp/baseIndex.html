@@ -218,9 +218,6 @@
             <a class="item" href="{% url 'wmaApp:manage_customer' %}">
                 <div><i class="users icon"></i>Customer List</div>
             </a>
-            <a class="item" href="{% url 'wmaApp:customer_ledger' %}">
-                <div><i class="book reader icon"></i>Customer Ledger</div>
-            </a>
 
         </div>
     </div>
@@ -256,6 +253,9 @@
                 <a class="item" href="{% url 'wmaApp:manage_sale' %}">
                     <div><i class="book icon"></i>Sales List</div>
                 </a>
+                 <a class="item" href="{% url 'wmaApp:booking_list' %}">
+                    <div><i class="book icon"></i>Booking List</div>
+                </a>
 
             </div>
         </div>
@@ -287,11 +287,8 @@
             Reports
         </div>
         <div class="menu">
-            <a class="item" href="{% url 'wmaApp:manage_customer' %}">
-                <div><i class="users icon"></i>Customer List</div>
-            </a>
-            <a class="item" href="{% url 'wmaApp:customer_ledger' %}">
-                <div><i class="book reader icon"></i>Customer Ledger</div>
+            <a class="item" href="{% url 'wmaApp:reports' %}">
+                <div><i class="book icon"></i>Reports</div>
             </a>
 
         </div>
@@ -507,6 +504,9 @@ Driver side bar
 <script src="https://cdn.datatables.net/fixedcolumns/5.0.0/js/dataTables.fixedColumns.min.js"></script>
 
 <script>
+    $('.ui.accordion')
+  .accordion()
+;
     $.fn.DataTable.ext.pager.numbers_length = 4;
     $(document).ready(function () {
         // initialize the form an fields

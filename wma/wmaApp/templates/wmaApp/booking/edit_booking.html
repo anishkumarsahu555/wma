@@ -1,7 +1,7 @@
 {% extends 'wmaApp/baseIndex.html' %}
 {% load static %}
 {% block title %}
-<title>Add Sales</title>
+<title>Edit Booking</title>
 {% endblock %}
 {% block css %}
 {% endblock %}
@@ -37,7 +37,7 @@
     <div class="sixteen wide column">
         <div class="ui  pointing secondary menu">
             <div style="cursor: pointer;" class="item active" data-tab="user"
-            >Add New Sale
+            >Edit Booking
             </div>
         </div>
         <div class="ui tab " data-tab="user">
@@ -54,7 +54,7 @@
                                 </select>
                             </div>
                             <div class="six wide field required" >
-                                <label>Sale Date / Booking Delivery Date</label>
+                                <label>Booking Delivery Date</label>
                                 <div class="ui calendar" id="saleDate">
                                     <div class="ui input left icon">
                                         <input type="text" placeholder="Date" name="saleDateVal" id="saleDateVal">
@@ -122,8 +122,7 @@
 
                             <div class="eleven wide  field ">
                                 <div class="ui long scrolling container" style="margin-left: 0; margin-right: 0;">
-<!--                                    <table class="ui red tiny last head foot stuck unstackable celled table" id="itemTable">-->
-                                    <table class="ui blue unstackable tiny sortable celled very nowrap very compact table" id="itemTable">
+                                    <table class="ui red tiny last head foot stuck unstackable celled table" id="itemTable">
                                         <thead>
                                         <tr>
                                             <th>Sl.no.</th>
@@ -137,6 +136,28 @@
                                         </tr>
                                         </thead>
                                         <tbody>
+                                        {% for p in products %}
+                                        <tr id="{{p.productID.pk}}">
+                                            <td id="row{{p.productID.pk}}">
+                                                {{forloop.counter}} <input type="hidden" id="itemProductID{{p.productID.pk}}" value="{{p.productID.pk}}">
+                                            </td>
+                                            <td id="itemProduct{{p.productID.pk}}">{{p.productName}}</td>
+                                            <td id="itemQuantity{{p.productID.pk}}">{{p.quantity}}</td>
+                                            <td id="itemRate{{p.productID.pk}}">{{p.unitPrice}}</td>
+                                            <td id="itemUnit{{p.productID.pk}}">{{p.unit}}</td>
+                                            <td id="itemTotal{{p.productID.pk}}">{{p.totalPrice}}</td>
+                                            <td id="itemRemark{{p.productID.pk}}">{{p.remark}}</td>
+                                            <td style="display: flex">
+                                                <button type="button" style="font-size:8px;" onclick="GetItemDetail('{{p.productID.pk}}')" class="ui circular facebook icon button green">
+                                                    <i class="pen icon"></i>
+                                                </button>
+                                                <button type="button" style="font-size:8px;" onclick="delItem('{{p.productID.pk}}')" class="ui circular youtube icon button">
+                                                    <i class="trash alternate icon"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+
+                                        {% endfor %}
                                         </tbody>
 
                                     </table>
@@ -147,7 +168,7 @@
                                     <div class="item ">
                                         <div class="right floated content">
                                             <div class="ui tag large purple label">
-                                                <i class="rupee sign icon"></i> <span id="subTotal">0.00</span>
+                                                <i class="rupee sign icon"></i> <span id="subTotal">{{ object.totalAmount }}</span>
                                             </div>
                                         </div>
                                         <div class="content">
@@ -158,7 +179,7 @@
                                     <div class="item">
                                         <div class="right floated content">
                                             <div class="ui tag large purple label">
-                                                <i class="rupee sign icon"></i> <span id="totalTax">0.00</span>
+                                                <i class="rupee sign icon"></i> <span id="totalTax">{{ object.totalTax}}</span>
                                             </div>
                                         </div>
                                         <div class="content">
@@ -170,7 +191,7 @@
                                     <div class="item">
                                         <div class="right floated content">
                                             <div class="ui tag large teal label">
-                                                <i class="rupee sign icon"></i> <span style="padding: 5px;" contenteditable="true" id="additionalCharge">0.00</span>
+                                                <i class="rupee sign icon"></i> <span style="padding: 5px;" contenteditable="true" id="additionalCharge">{{object.additionalCharge}}</span>
                                             </div>
                                         </div>
                                         <div class="content">
@@ -182,7 +203,7 @@
                                     <div class="item">
                                         <div class="right floated content">
                                             <div class="ui tag large purple label">
-                                                <i class="rupee sign icon"></i> <span id="grandTotal" >0.00</span>
+                                                <i class="rupee sign icon"></i> <span id="grandTotal" >{{object.totalAmountAfterTax}}</span>
                                             </div>
                                         </div>
                                         <div class="content">
@@ -203,44 +224,6 @@
                         <input type="hidden" id="productName">
                         <input type="hidden" id="productUnit">
 
-<div class="ui styled fluid accordion" style="margin-bottom:1rem;">
-  <div class="title active">
-    <i class="dropdown icon"></i>
-    Add Addition Jar and collection details
-  </div>
-  <div class="content active">
-    <p style="display: block !important;" class="visible">
-
-
-    </p>
-      <div class="three unstackable fields ">
-                            <div class="five wide  field ">
-                                <label>Jar In</label>
-                                <input type="number" name="jarIn" id="jarIn" placeholder="Jar In" value="0">
-                            </div>
-                            <div class="five wide field ">
-                                <label>Jar Out</label>
-                                <input type="number" name="jarOut" id="jarOut" placeholder="Jar Out" value="0">
-                            </div>
-                            <div class="six wide field ">
-                                <label>Amount Collected(₹)</label>
-                                <input type="number" name="amountCollected" id="amountCollected" placeholder="Amount Collected" value="0">
-                            </div>
-
-
-
-
-                        </div>
-                            <div class="sixteen wide  field ">
-                                <label>Additional Remark</label>
-                                <textarea name="" id="remarkAdditional" placeholder="Additional Remark" rows="2"></textarea>
-                            </div>
-  </div>
-</div>
-<div class="ui toggle checkbox">
-  <input type="checkbox" name="booking" id="catering">
-  <label>Book for Catering ?</label>
-</div>
 
                     </form>
                 </div>
@@ -249,7 +232,7 @@
                     <div class="row" style="padding-left: 5px;padding-right: 5px">
                         <div class="16 wide column center aligned">
                             <button onclick="addDetail()" id="" class="ui green right labeled icon button saveBtn">
-                                Submit
+                                Update
                                 <i class="checkmark icon"></i>
                             </button>
                             <button id="" style="display: none;" class="ui teal double right labeled icon loading button saveBtnLoad">
@@ -300,7 +283,7 @@
     var today = new Date();
     $('#saleDate')
         .calendar({
-                initialDate: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
+                initialDate: {{ object.expectedDeliveryDate|date:'d' }} + '/' + {{ object.expectedDeliveryDate|date:'m' }} + '/' + {{ object.expectedDeliveryDate|date:'Y' }},
                 monthFirst: false,
                 type: 'date',
                 formatter: {
@@ -367,6 +350,8 @@
                     $('#customer').append('<option value="' + response.data[j]['ID'] + '" >' + response.data[j]['DisplayDetail'] + '</option>');
 
                 }
+
+                $('#customer').val('{{object.customerID.pk}}').change();
 
             },
 
@@ -664,12 +649,6 @@
         var additionalCharge = $('#additionalCharge').html();
         var tax = $('#totalTax').html();
         var subTotal = $('#subTotal').html();
-        var jarIn = $('#jarIn').val();
-        var jarOut = $('#jarOut').val();
-        var amountCollected = $('#amountCollected').val();
-        var remarkAdditional = $('#remarkAdditional').val();
-        var catering = $('#catering').is(':checked') ? 1 : 0;
-
 
         var datas = '';
         $('#itemTable tbody tr').each(function () {
@@ -700,6 +679,7 @@
             hideLoading();
             return false;
         }
+        debugger
         var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
 
         data = new FormData();
@@ -711,17 +691,13 @@
         data.append('tax', tax);
         data.append('datas', datas);
         data.append('subTotal', subTotal);
-        data.append('jarIn', jarIn);
-        data.append('jarOut', jarOut);
-        data.append('amountCollected', amountCollected);
-        data.append('remarkAdditional', remarkAdditional);
-        data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
-        data.append('catering', catering);
+        data.append('id', '{{object.pk}}');
 
+        data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
 
         $.ajax({
             type: 'post',
-            url: "{% url 'wma_api:add_sales_api' %}",
+            url: "{% url 'wma_api:update_booking_api' %}",
             data: data,
             contentType: false,
             cache: false,
@@ -741,7 +717,7 @@
                     $('#myModalUser').modal('toggle');
 
                     setTimeout(function() {
-                        location.reload();
+                        location.href = "{% url 'wmaApp:booking_list' %}";
                         hideLoading();
                     }, 1000);
                 } else {

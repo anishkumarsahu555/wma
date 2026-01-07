@@ -1,6 +1,6 @@
 from django.urls import path
 from .api_view import *
-
+from .reports_view import *
 app_name = 'staff_api'
 
 urlpatterns = [
@@ -87,5 +87,17 @@ urlpatterns = [
     path('delete_payment_api/', delete_payment_api, name='delete_payment_api'),
     path('get_payment_detail/', get_payment_detail, name='get_payment_detail'),
     path('update_payment_api/', update_payment_api, name='update_payment_api'),
+
+    # Customer Ledger
+    path('CustomerLedgerListJson/', CustomerLedgerListJson.as_view(), name='CustomerLedgerListJson'),
+
+
+    # Reports PDF
+    path('download_report_pdf/', download_report_pdf, name='download_report_pdf'),
+
+    # Booking
+    path('BookingListJson/', BookingListJson.as_view(), name='BookingListJson'),
+    path('update_booking_api/', update_booking_api, name='update_booking_api'),
+    path('delete_booking_api/', delete_booking_api, name='delete_booking_api'),
 
 ]

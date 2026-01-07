@@ -17,7 +17,7 @@ urlpatterns = [
     path('admin_home/', views.admin_home, name='admin_home'),
     path('manage_staff/', views.manage_staff, name='manage_staff'),
     path('manage_customer/', views.manage_customer, name='manage_customer'),
-    path('customer_ledger/', views.customer_ledger, name='customer_ledger'),
+    path('customer_ledger/<int:id>/', views.customer_ledger, name='customer_ledger'),
     path('manage_supplier/', views.manage_supplier, name='manage_supplier'),
     path('manage_location/', views.manage_location, name='manage_location'),
     path('manage_orders/', views.manage_orders, name='manage_orders'),
@@ -34,4 +34,8 @@ urlpatterns = [
     path('manage_expense/', views.manage_expense, name='manage_expense'),
     path('manage_jars/', views.manage_jars, name='manage_jars'),
     path('manage_payments/', views.manage_payments, name='manage_payments'),
+    path('reports/', views.reports, name='reports'),
+    path('booking_list/', views.booking_list, name='booking_list'),
+    path('edit_booking/<int:id>/', views.edit_booking, name='edit_booking'),
+    path('detail_booking/<int:id>/', views.detail_booking, name='detail_booking'),
 ]

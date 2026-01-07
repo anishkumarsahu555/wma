@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 from pathlib import Path
+from django.conf.global_settings import DATABASES
 from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,12 +77,30 @@ WSGI_APPLICATION = 'wma.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.environ.get("USE_MYSQL", "false") == "true":
+    # Mysql
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'wma',
+        'HOST': os.environ.get("DB_HOST", "127.0.0.1"),
+        'PORT': '3306',
+        'USER': 'root',
+        'PASSWORD': os.environ.get("DB_PASSWORD", "password"),
+        'OPTIONS': {
+            "init_command": "SET foreign_key_checks = 0;",
+            'charset': 'utf8mb4',
+        },
     }
 }
+else:
+    # sqlite3
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation

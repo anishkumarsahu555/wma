@@ -1,0 +1,79 @@
+{% load custom_has_group_tag %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WMAPP</title>
+    <style>
+        @page {
+            size: A5;
+            margin: .3cm;
+        }
+
+
+    </style>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <span style="font-size: 10px;">Jar Report for Date: {{ startDate|date }} to {{ endDate|date }}</span>
+    </div>
+
+
+    <table style="font-size: 10px">
+        <tr>
+            <th>Location</th>
+            <th>In Jar</th>
+            <th>Out Jar</th>
+        </tr>
+        <tr>
+            <td>{{ location|capfirst }}</td>
+            <td>{{ inJar|floatformat:0 }}</td>
+            <td>{{ outJar|floatformat:0 }}</td>
+        </tr>
+    </table>
+    <p style="font-size: 10px; margin: 2px;padding-top: 10px">Sales Details</p>
+
+    <table style="font-size: 10px">
+        <tr>
+            <th>CustomerName</th>
+            <th>InJar</th>
+            <th>OutJar</th>
+            <th>CreatedBy</th>
+            <th>Location</th>
+            <th>EntryDate</th>
+        </tr>
+        {% for foo in col %}
+
+            <tr>
+                <td>{{ foo.customerID.name|capfirst }}</td>
+                <td>{{ foo.inJar|floatformat:0 }}</td>
+                <td>{{ foo.outJar|floatformat:0 }}</td>
+                <td>{{ foo.addedByID.name|capfirst }}</td>
+                <td>{{ foo.customerID.locationID.name|capfirst }}</td>
+                <td>{{ foo.date|date:'d/m/Y' }}</td>
+            </tr>
+        {% endfor %}
+
+    </table>
+</div>
+
+</body>
+</html>

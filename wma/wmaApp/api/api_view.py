@@ -1,6 +1,6 @@
 from datetime import datetime
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum, Count, Avg
 from django.core.cache import cache
 from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
@@ -699,7 +699,7 @@ class CustomerListJson(BaseDatatableView):
                     'Manager' in self.request.user.groups.values_list('name', flat=True)or \
                     'Admin' in self.request.user.groups.values_list('name', flat=True):
                 action = '''
-                <a href="/detail_sale/{}/" data-inverted="" data-tooltip="View Ledger" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button pink">
+                <a href="/customer_ledger/{}/" data-inverted="" data-tooltip="View Ledger" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button pink">
                    <i class="book reader icon"></i>
                   </a> 
                 <button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
@@ -1486,47 +1486,139 @@ def update_product_api(request):
 # ------------------ Sales --------------------------------------
 @csrf_exempt
 @require_http_methods(['POST'])
-@validate_input(['customer', 'saleDate', 'grandTotal', 'additionalCharge', 'tax', 'datas', 'subTotal'])
+@validate_input(['customer', 'saleDate', 'grandTotal', 'additionalCharge', 'tax', 'datas', 'subTotal','jarIn','jarOut','amountCollected','remarkAdditional', 'catering'])
 @transaction.atomic
 def add_sales_api(request):
     data = request.POST.dict()
     try:
         owner_id = get_owner_id(request)
-        obj = Sales(
-            customerID_id=data['customer'],
-            saleDate=datetime.strptime(data['saleDate'], '%d/%m/%Y'),
-            totalAmount=data['subTotal'],
-            totalTax=data['tax'],
-            additionalCharge=data['additionalCharge'],
-            totalAmountAfterTax=data['grandTotal'],
-            ownerID_id=owner_id,
-            addedByID_id = get_user_id(request),
-        )
-        obj.save()
-        obj.invoiceNumber = "S"+str(Sales.objects.filter(ownerID_id=owner_id).count()).zfill(8)
-        obj.save()
-        splited_receive_item = data['datas'].split("@")
-        for item in splited_receive_item[:-1]:
-            item_details = item.split('|')
+        if data['catering'] == '0':
+            obj = Sales(
+                customerID_id=data['customer'],
+                saleDate=datetime.strptime(data['saleDate'], '%d/%m/%Y'),
+                totalAmount=data['subTotal'],
+                totalTax=data['tax'],
+                additionalCharge=data['additionalCharge'],
+                totalAmountAfterTax=data['grandTotal'],
+                ownerID_id=owner_id,
+                addedByID_id = get_user_id(request),
+            )
+            obj.save()
+            obj.invoiceNumber = "S"+str(Sales.objects.filter(ownerID_id=owner_id).count()).zfill(8)
+            obj.save()
+            splited_receive_item = data['datas'].split("@")
+            for item in splited_receive_item[:-1]:
+                item_details = item.split('|')
 
-            p = SaleProduct()
-            p.salesID_id = obj.pk
-            p.productID_id = item_details[0]
-            p.productName = item_details[1]
-            p.quantity = item_details[2]
-            p.unitPrice = item_details[3]
-            p.totalPrice = item_details[4]
-            p.totalAmountAfterTax = item_details[4]
-            p.remark = item_details[5]
-            p.unit= item_details[6]
-            p.ownerID_id = owner_id
-            p.save()
-        generate_customer_ledger(request,data['customer'], 'credit', obj.totalAmountAfterTax, "New Sales")
-        logger.info("Sales created successfully")
-        return SuccessResponse("Sales created successfully").to_json_response()
+                p = SaleProduct()
+                p.salesID_id = obj.pk
+                p.productID_id = item_details[0]
+                p.productName = item_details[1]
+                p.quantity = item_details[2]
+                p.unitPrice = item_details[3]
+                p.totalPrice = item_details[4]
+                p.totalAmountAfterTax = item_details[4]
+                p.remark = item_details[5]
+                p.unit= item_details[6]
+                p.ownerID_id = owner_id
+                p.save()
+
+            jar_obj = JarCounter(
+                customerID_id=data['customer'],
+                inJar=data['jarIn'],
+                outJar=data['jarOut'],
+                remark=data['remarkAdditional'],
+                date = datetime.today().date(),
+                ownerID_id=get_owner_id(request),
+                addedByID_id = get_user_id(request),
+
+            )
+            if int(data['jarIn']) > 0 or int(data['jarOut']) > 0:
+                jar_obj.save()
+                logger.info("Jar record added successfully")
+
+
+            payment_obj = Payment(
+                customerID_id=data['customer'],
+                paymentAmount=data['amountCollected'],
+                remark=data['remarkAdditional'],
+                paymentDate = datetime.today().date(),
+                ownerID_id=get_owner_id(request),
+                addedByID_id = get_user_id(request)
+            )
+
+            generate_customer_ledger(request,data['customer'], 'credit', obj.totalAmountAfterTax, "New Sales")
+            logger.info("Sales created successfully")
+            if int(data['amountCollected']) > 0:
+                payment_obj.save()
+                generate_customer_ledger(request,data['customer'], 'debit', payment_obj.paymentAmount, "Payment Received")
+                logger.info("Payment record added successfully")
+            return SuccessResponse("Sales created successfully").to_json_response()
+        else:
+            obj = AdvanceOrder(
+                customerID_id=data['customer'],
+                expectedDeliveryDate=datetime.strptime(data['saleDate'], '%d/%m/%Y'),
+                totalAmount=data['subTotal'],
+                totalTax=data['tax'],
+                additionalCharge=data['additionalCharge'],
+                totalAmountAfterTax=data['grandTotal'],
+                ownerID_id=owner_id,
+                addedByID_id = get_user_id(request),
+            )
+            obj.save()
+            obj.invoiceNumber = "B"+str(AdvanceOrder.objects.filter(ownerID_id=owner_id).count()).zfill(8)
+            obj.save()
+            splited_receive_item = data['datas'].split("@")
+            for item in splited_receive_item[:-1]:
+                item_details = item.split('|')
+
+                p = AdvanceOrderProduct()
+                p.orderID_id = obj.pk
+                p.productID_id = item_details[0]
+                p.productName = item_details[1]
+                p.quantity = item_details[2]
+                p.unitPrice = item_details[3]
+                p.totalPrice = item_details[4]
+                p.totalAmountAfterTax = item_details[4]
+                p.remark = item_details[5]
+                p.unit= item_details[6]
+                p.ownerID_id = owner_id
+                p.save()
+
+            jar_obj = JarCounter(
+                customerID_id=data['customer'],
+                inJar=data['jarIn'],
+                outJar=data['jarOut'],
+                remark=data['remarkAdditional'],
+                date = datetime.today().date(),
+                ownerID_id=get_owner_id(request),
+                addedByID_id = get_user_id(request),
+
+            )
+            if int(data['jarIn']) > 0 or int(data['jarOut']) > 0:
+                jar_obj.save()
+                logger.info("Jar record added successfully")
+
+
+            payment_obj = Payment(
+                customerID_id=data['customer'],
+                paymentAmount=data['amountCollected'],
+                remark=data['remarkAdditional'],
+                paymentDate = datetime.today().date(),
+                ownerID_id=get_owner_id(request),
+                addedByID_id = get_user_id(request)
+            )
+
+            generate_customer_ledger(request,data['customer'], 'credit', obj.totalAmountAfterTax, "New Sales")
+            logger.info("Booking created successfully")
+            if int(data['amountCollected']) > 0:
+                payment_obj.save()
+                generate_customer_ledger(request,data['customer'], 'debit', payment_obj.paymentAmount, "Payment Received")
+                logger.info("Payment record added successfully")
+            return SuccessResponse("Booking created successfully").to_json_response()  
     except Exception as e:
-        logger.error(f"Error while creating Sales: {e}")
-        return ErrorResponse("Unable to add new Sales. Please try again").to_json_response()
+        logger.error(f"Error while creating Booking: {e}")
+        return ErrorResponse("Unable to add new Booking. Please try again").to_json_response()
 
 
 class SalesListJson(BaseDatatableView):
@@ -2224,7 +2316,94 @@ def update_payment_api(request):
 # Customer ledger
 
 class CustomerLedgerListJson(BaseDatatableView):
-    order_columns = [ 'addedDate','isCredit','credit','debit' ,'addedByID' ,'remark']
+    order_columns = [ 'addedDate','isCredit','credit','debit' ,'addedByID' ,'remark','dateCreated']
+
+    def get_initial_queryset(self):
+        owner_id = get_owner_id(self.request)
+        customer_id = self.request.GET.get("customer_id") or self.request.GET.get("customerID")
+        
+        # Base queryset with customer filter if provided
+        if customer_id:
+            qs = CustomerLedger.objects.select_related().filter(
+                isDeleted__exact=False, 
+                ownerID_id=owner_id, 
+                customerID_id=int(customer_id)
+            )
+        else:
+            qs = CustomerLedger.objects.select_related().filter(
+                isDeleted__exact=False, 
+                ownerID_id=owner_id
+            )
+        
+        # Apply date filtering if provided
+        try:
+            startDateV = self.request.GET.get("startDate")
+            endDateV = self.request.GET.get("endDate")
+            if startDateV and endDateV:
+                sDate = datetime.strptime(startDateV, '%d/%m/%Y')
+                eDate = datetime.strptime(endDateV, '%d/%m/%Y')
+                qs = qs.filter(addedDate__range=[sDate.date(), eDate.date()])
+        except:
+            pass
+        
+        return qs
+
+    def filter_queryset(self, qs):
+
+        search = self.request.GET.get('search[value]', None)
+        if search:
+            qs = qs.filter(
+
+                Q(remark__icontains=search) 
+                |Q(credit__icontains=search) 
+                |Q(debit__icontains=search) 
+                | Q(dateCreated__icontains=search)
+            )
+
+        return qs
+
+    def prepare_results(self, qs):
+        json_data = []
+        for item in qs:
+            # if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
+            #         'Manager' in self.request.user.groups.values_list('name', flat=True)or \
+            #         'Admin' in self.request.user.groups.values_list('name', flat=True):
+            #     action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+            #         <i class="pen icon"></i>
+            #       </button>
+            #       <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
+            #         <i class="trash alternate icon"></i>
+            #       </button></td>'''.format(item.pk, item.pk),
+
+            # else:
+            action = '''<div class="ui tiny label">
+                Denied
+            </div>'''
+
+            credit = f'''
+
+            <div class='ui green label'> {item.credit if item.credit > 0 else ''} </div>
+            '''   
+            debit = f'''
+            <div class='ui red label'> {item.debit if item.debit > 0 else ''} </div>
+            ''' 
+            json_data.append([
+                escape(item.addedDate.strftime('%d-%m-%Y')),
+               credit,
+               debit,
+                escape(item.remark),
+                escape(item.addedByID.name if item.addedByID else ''),
+                escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
+                action,
+
+                ])
+
+        return json_data
+
+# booking api urls
+
+class BookingListJson(BaseDatatableView):
+    order_columns = [ 'invoiceNumber','expectedDeliveryDate','customerID', 'totalAmount','totalTax', 'additionalCharge', 'totalAmountAfterTax', 'addedByID','dateCreated']
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
@@ -2232,28 +2411,33 @@ class CustomerLedgerListJson(BaseDatatableView):
         try:
             startDateV = self.request.GET.get("startDate")
             endDateV = self.request.GET.get("endDate")
-            customerID = self.request.GET.get("customerID")
+            staffID = self.request.GET.get("staffID")
             sDate = datetime.strptime(startDateV, '%d/%m/%Y')
             eDate = datetime.strptime(endDateV, '%d/%m/%Y')
-            if not customerID:
-                return CustomerLedger.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id,addedDate__range=[sDate.date(), eDate.date()])
+            if staffID == 'All':
+                return AdvanceOrder.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id,expectedDeliveryDate__range=[sDate.date(), eDate.date()])
             else:
-                return CustomerLedger.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, addedDate_range=[sDate.date(), eDate.date()],
-                                                                  customerID_id=int(customerID))
+                return AdvanceOrder.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, expectedDeliveryDate__range=[sDate.date(), eDate.date()],
+                                                             addedBy_id=int(staffID))
 
 
         except:
-            return Payment.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, paymentDate__icontains=datetime.today().date())
+            return AdvanceOrder.objects.select_related().filter(isDeleted__exact=False, ownerID_id=owner_id, expectedDeliveryDate__icontains=datetime.today().date())
 
     def filter_queryset(self, qs):
 
         search = self.request.GET.get('search[value]', None)
         if search:
             qs = qs.filter(
-                Q(customerID__name__icontains=search)
-                |Q(paymentAmount__icontains=search)
-                |Q(paymentDate__icontains=search)
-                |Q(remark__icontains=search) |Q(customerID__locationID__name__icontains=search)
+                Q(invoiceNumber__icontains=search)
+                |Q(expetedDeliveryDate__icontains=search)
+                |Q(customerID__name__icontains=search)
+                |Q(customerID__locationID__name__icontains=search)
+                |Q(totalAmount__icontains=search)
+                |Q(totalTax__icontains=search)
+                |Q(additionalCharge__icontains=search)
+                |Q(totalAmountAfterTax__icontains=search)
+                |Q(addedByID__name__icontains=search)
                 | Q(dateCreated__icontains=search)
             )
 
@@ -2265,12 +2449,17 @@ class CustomerLedgerListJson(BaseDatatableView):
             if 'Owner' in self.request.user.groups.values_list('name', flat=True) or \
                     'Manager' in self.request.user.groups.values_list('name', flat=True)or \
                     'Admin' in self.request.user.groups.values_list('name', flat=True):
-                action = '''<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
+                action = '''
+                
+                   <a href="/detail_booking/{}/" data-inverted="" data-tooltip="View Detail" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button orange">
+                    <i class="eye icon"></i>
+                  </a>
+                <a href="/edit_booking/{}/" data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
-                  </button>
+                  </a>
                   <button data-inverted="" data-tooltip="Delete" data-position="left center" data-variation="mini" style="font-size:10px;" onclick ="delUser('{}')" class="ui circular youtube icon button" style="margin-left: 3px">
                     <i class="trash alternate icon"></i>
-                  </button></td>'''.format(item.pk, item.pk),
+                  </button></td>'''.format(item.pk,item.pk, item.pk),
 
             else:
                 action = '''<div class="ui tiny label">
@@ -2279,17 +2468,90 @@ class CustomerLedgerListJson(BaseDatatableView):
 
 
             json_data.append([
+                escape(item.invoiceNumber),
+                escape(item.expectedDeliveryDate.strftime('%d-%m-%Y')),
                 escape(item.customerID.name) + ' - ' + escape(item.customerID.locationID.name),
-                escape( item.paymentAmount),
-                escape(item.isApprove),
-                escape(item.approvedBy.name if item.approvedBy else ''),
-                escape(item.paymentDate.strftime('%d-%m-%Y')),
+                escape(item.totalAmount),
+                escape(item.totalTax),
+                escape(item.additionalCharge),
+                escape(item.totalAmountAfterTax),
                 escape(item.addedByID.name if item.addedByID else ''),
-                escape(item.remark),
                 escape(item.dateCreated.strftime('%d-%m-%Y %I:%M %p')),
                 action,
 
                 ])
-
         return json_data
 
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@validate_input(["id"])
+@transaction.atomic
+def delete_booking_api(request):
+    owner_id = get_owner_id(request)
+    obj_id = request.POST.get("id")
+    try:
+        try:
+            obj = AdvanceOrder.objects.get(id=obj_id, isDeleted=False, ownerID_id=owner_id)
+        except AdvanceOrder.DoesNotExist:
+            logger.error(f"Booking not found")
+            return ErrorResponse("Booking not found", status_code=404).to_json_response()
+
+        # Soft delete
+        obj.isDeleted = True
+        obj.save()
+        logger.info("Booking deleted successfully")
+        return SuccessResponse("Booking deleted successfully").to_json_response()
+
+    except Exception as e:
+        logger.error(f"Error while deleting Booking: {e}")
+        return ErrorResponse("Error while deleting Booking", status_code=500).to_json_response()
+
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@validate_input(['customer', 'saleDate', 'grandTotal', 'additionalCharge', 'tax', 'datas', 'subTotal', 'id'])
+@transaction.atomic
+def update_booking_api(request):
+    data = request.POST.dict()
+
+    try:
+        owner_id = get_owner_id(request)
+        obj = AdvanceOrder.objects.get(pk=data['id'], ownerID_id=owner_id, isDeleted=False)
+        obj.customerID_id = data['customer']
+        obj.expectedDeliveryDate = datetime.strptime(data['saleDate'], '%d/%m/%Y')
+        obj.totalAmount = data['subTotal']
+        obj.totalTax = data['tax']
+        obj.additionalCharge = data['additionalCharge']
+        obj.totalAmountAfterTax = data['grandTotal']
+        obj.save()
+        # obj.invoiceNumber = "B"+str(AdvanceOrder.objects.filter(ownerID_id=owner_id).count()).zfill(8)
+        # obj.save()
+        splited_receive_item = data['datas'].split("@")
+        old_items = AdvanceOrderProduct.objects.filter(orderID_id=data['id'])
+        for o in old_items:
+            o.isDeleted = True
+            o.save()
+
+        for item in splited_receive_item[:-1]:
+            item_details = item.split('|')
+
+            p = AdvanceOrderProduct()
+            p.orderID_id = obj.pk
+            p.productID_id = item_details[0]
+            p.productName = item_details[1]
+            p.quantity = item_details[2]
+            p.unitPrice = item_details[3]
+            p.totalPrice = item_details[4]
+            p.totalAmountAfterTax = item_details[4]
+            p.remark = item_details[5]
+            p.unit= item_details[6]
+            p.ownerID_id = owner_id
+            p.save()
+
+        logger.info("Booking updated successfully")
+        return SuccessResponse("Booking updated successfully").to_json_response()
+    except Exception as e:
+        logger.error(f"Error while updated Booking: {e}")
+        return ErrorResponse("Unable to update Booking. Please try again").to_json_response()

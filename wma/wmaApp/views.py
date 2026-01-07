@@ -322,6 +322,57 @@ def my_profile(request):
     return render(request, 'wmaApp/profile/my_profile.html', context)
 
 @check_groups('Owner','Manager','Admin', 'Driver')
-def customer_ledger(request):
-    logger.info("Customer Ledger called")
-    return render(request, 'wmaApp/customer/customer_ledger.html')
+def customer_ledger(request, id=None):
+    logger.info("Customer Ledger called with id: " + str(id))
+    object = get_object_or_404(Customer, pk=id, isDeleted=False, ownerID_id=get_owner_id(request))
+    context = {
+        'object': object
+    }
+    return render(request, 'wmaApp/customer/customer_ledger.html', context)
+
+
+@check_groups('Owner','Manager','Admin', 'Driver')
+def reports(request):
+    logger.info("Reports called")
+    owner_id = get_owner_id(request)
+    locations = Location.objects.filter(ownerID_id=owner_id, isDeleted=False).order_by('name')
+    context = {
+        'locations': locations
+    }
+    return render(request, 'wmaApp/reports/reports.html', context)
+
+# booking   
+@check_groups('Owner','Manager','Admin', 'Driver')
+def booking_list(request):
+    logger.info("Booking list called")
+    staffs = StaffUser.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request))
+    context = {
+        'staffs': staffs
+    }
+    return render(request, 'wmaApp/booking/booking_list.html', context)
+
+@check_groups('Owner','Manager','Admin')
+def edit_booking(request, id=None):
+    logger.info("Edit booking called")
+    object = get_object_or_404(AdvanceOrder, pk=id, isDeleted=False, ownerID_id=get_owner_id(request))
+    products = AdvanceOrderProduct.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request), orderID_id =object.id )
+
+    context = {
+        'object': object,
+        'products': products
+    }
+    return render(request, 'wmaApp/booking/edit_booking.html', context)
+
+@check_groups('Owner','Manager','Admin')
+def detail_booking(request, id=None):
+    logger.info("Detail booking called")
+    object = get_object_or_404(AdvanceOrder, pk=id, isDeleted=False, ownerID_id=get_owner_id(request))
+    products = AdvanceOrderProduct.objects.filter(isDeleted=False, ownerID_id=get_owner_id(request), orderID_id =object.id )
+
+    context = {
+        'object': object,
+        'products': products
+    }
+    return render(request, 'wmaApp/booking/booking_detail.html', context)
+
+

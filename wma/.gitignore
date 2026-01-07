@@ -8,5 +8,9 @@ wheels/
 
 # Virtual environments
 .venv
-.idea
+.idea/
 logs/
+.DS_Store
+./media_cdn
+migrations/
+migrations copy/
