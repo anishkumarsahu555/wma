@@ -14,3 +14,4 @@ logs/
 ./media_cdn
 migrations/
 migrations copy/
+.vscode

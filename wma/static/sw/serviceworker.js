@@ -1,105 +1,296 @@
-var version = 'v1.0.3::';
+// ================== CONFIG ================== //
 
-// Install Event
-self.addEventListener("install", (event) => {
+// Version / cache name
+const CACHE_VERSION = 'WMA-v1';
+const CACHE_NAME = `${CACHE_VERSION}::fundamentals`;
+const MAX_CACHE_ITEMS = 100;  // limit number of cached items
+const MAX_RETRIES = 4;        // limit retries for failed requests
+
+// URLs to pre-cache (fill as needed)
+const URLS_TO_CACHE = [
+    // '/',
+    // '/static/css/app.css',
+    // '/static/js/app.js',
+];
+
+// File extensions that are cacheable
+const CACHEABLE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'svg', 'css', 'js'];
+
+// URL patterns where we DO NOT want SW handling (no cache, no retry)
+const NO_RETRY_URL_PATTERNS = [
+    /\/attendance\/generate_attendance_report\/.*/,
+    /\/invoice\/generate_net_report_accountant\/.*/,
+    // add more patterns here if needed
+];
+
+// ================== INSTALL ================== //
+
+self.addEventListener('install', (event) => {
     console.log('WORKER: Install event in progress.');
+
+    // Activate this SW immediately (no waiting for old one to die)
+    self.skipWaiting();
+
     event.waitUntil(
-        caches.open(version + 'fundamentals').then((cache) => {
-            return cache.addAll([
-                'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.9.4/semantic.min.css',
-                'https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.9.4/semantic.min.js',
-                'https://cdn.datatables.net/2.3.2/css/dataTables.semanticui.min.css',
-                'https://cdn.datatables.net/2.3.2/js/dataTables.min.js',
-                'https://cdn.datatables.net/2.3.2/js/dataTables.semanticui.min.js',
-                'https://cdn.datatables.net/buttons/3.2.4/js/dataTables.buttons.min.js',
-                'https://cdn.datatables.net/buttons/3.2.4/js/buttons.semanticui.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js',
-                'https://cdn.datatables.net/buttons/3.2.4/js/buttons.html5.min.js',
-                'https://cdn.datatables.net/buttons/3.2.4/js/buttons.print.min.js',
-                'https://cdn.datatables.net/buttons/3.2.4/js/buttons.colVis.min.js',
-                'https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic&subset=latin'
-            ]);
-        }).then(() => console.log('WORKER: Install completed.'))
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                console.log('WORKER: Caching assets...', URLS_TO_CACHE);
+                return cache.addAll(URLS_TO_CACHE);
+            })
+            .then(() => {
+                console.log('WORKER: Install completed.');
+            })
+            .catch((error) => {
+                console.error('WORKER: Failed to cache assets:', error);
+            })
     );
 });
 
-// Activate Event
-self.addEventListener("activate", (event) => {
+// ================== ACTIVATE ================== //
+
+self.addEventListener('activate', (event) => {
     console.log('WORKER: Activate event in progress.');
+
     event.waitUntil(
-        caches.keys().then((keys) => {
-            return Promise.all(
-                keys.filter((key) => !key.startsWith(version))
-                    .map((key) => caches.delete(key))
+        (async () => {
+            // Take control of open clients (tabs) immediately
+            await self.clients.claim();
+
+            // Remove old caches
+            const keys = await caches.keys();
+            await Promise.all(
+                keys
+                    .filter((key) => !key.startsWith(CACHE_VERSION))
+                    .map((key) => {
+                        console.log(`WORKER: Deleting old cache ${key}`);
+                        return caches.delete(key);
+                    })
             );
-        }).then(() => console.log('WORKER: Activate completed.'))
-    );
-});
 
-// Helper to get file extension
-function getUrlExtension(url) {
-    return url.split(/[#?]/)[0].split('.').pop().trim();
-}
-
-// Fetch Event
-self.addEventListener("fetch", (event) => {
-    if (event.request.method !== 'GET') return;
-
-    event.respondWith(
-        caches.match(event.request).then((cached) => {
-            const fetchPromise = fetch(event.request)
-                .then((networkResponse) => {
-                    // Cache images and pages dynamically
-                    caches.open(version + 'pages').then((cache) => {
-                        const ext = getUrlExtension(event.request.url).toLowerCase();
-                        if (['png','jpg','jpeg','svg','html'].includes(ext)) {
-                            cache.put(event.request, networkResponse.clone());
-                        }
-                    });
-                    return networkResponse;
-                })
-                .catch(() => cached || offlineResponse());
-
-            return cached || fetchPromise;
+            console.log('WORKER: Activate completed. Old caches removed.');
+        })().catch((error) => {
+            console.error('WORKER: Failed during activate:', error);
         })
     );
 });
 
-// Offline fallback
-function offlineResponse() {
-    const html = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8"/>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-      <title>Offline</title>
-      <style>
-        body { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; font-family:"Segoe UI",sans-serif; background:linear-gradient(135deg,#193038,#2d3e50); color:#fff; text-align:center;}
-        h1{font-size:2rem; margin-bottom:.5rem;} p{margin-bottom:1.5rem; opacity:.9;}
-        .spinner{border:6px solid rgba(255,255,255,0.2); border-top:6px solid #ff6b6b; border-radius:50%; width:50px; height:50px; animation:spin 1s linear infinite; margin:20px auto;}
-        @keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
-        button{background:#ff6b6b; border:none; padding:12px 20px; font-size:1rem; font-weight:bold; border-radius:8px; cursor:pointer; transition:background 0.3s;}
-        button:hover{background:#ff3b3b;}
-        #toast{visibility:hidden; min-width:250px; background-color:#4CAF50; color:#fff; text-align:center; border-radius:8px; padding:16px; position:fixed; z-index:1; left:50%; bottom:30px; transform:translateX(-50%); font-size:1rem; opacity:0; transition:opacity 0.5s,bottom 0.5s;}
-        #toast.show{visibility:visible; opacity:1; bottom:50px;}
-      </style>
-    </head>
-    <body>
-      <h1>⚠ You’re Offline</h1>
-      <p>Trying to reconnect... Please check your internet connection.</p>
-      <div class="spinner"></div>
-      <button onclick="window.location.reload()">🔄 Reload Now</button>
-      <div id="toast">🎉 Back Online!</div>
-      <script>
-        function showToast(){const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),4000);}
-        setInterval(()=>{fetch(window.location.href,{method:'HEAD',cache:'no-store'}).then(()=>{showToast();setTimeout(()=>window.location.reload(),1500);}).catch(()=>console.log("Still offline..."));},5000);
-      </script>
-    </body>
-    </html>
-  `;
-    return new Response(html, { headers: { 'Content-Type': 'text/html' } });
+// ================== FETCH ================== //
+
+self.addEventListener('fetch', (event) => {
+    const request = event.request;
+    const url = new URL(request.url);
+
+    // Only handle GET requests
+    if (request.method !== 'GET') {
+        return;
+    }
+
+    // Ignore third-party origins (GA, fonts, CDNs, etc.)
+    if (url.origin !== self.location.origin) {
+        // Let the browser handle it normally – no cache, no retry
+        return;
+    }
+
+    // Bypass SW for long-running / special endpoints (like PDF reports)
+    if (NO_RETRY_URL_PATTERNS.some((pattern) => pattern.test(url.pathname))) {
+        console.log(`WORKER: Bypassing SW for ${url.pathname}`);
+        return; // browser will do normal network request
+    }
+
+    // For everything else, use cache + retry logic
+    event.respondWith(handleFetchWithRetry(event, request));
+});
+
+// ================== CORE LOGIC ================== //
+
+async function handleFetchWithRetry(event, request, retries = 0) {
+    try {
+        // 1. Try cache first
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) {
+            console.log(`WORKER: Serving from cache: ${request.url}`);
+            // Update cache in background
+            event.waitUntil(updateCache(request));
+            return cachedResponse;
+        }
+
+        // 2. If not in cache, go to network (with timeout)
+        const networkResponse = await fetchWithTimeout(request);
+        console.log(`WORKER: Fetched from network: ${request.url}`);
+
+        // 3. Cache static assets if cacheable
+        if (isCacheable(networkResponse, request.url)) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(request, networkResponse.clone());
+            console.log(`WORKER: Cached response for: ${request.url}`);
+            await enforceCacheSizeLimit(cache);
+        }
+
+        return networkResponse;
+
+    } catch (error) {
+        console.error(
+            `WORKER: Fetch attempt ${retries + 1} failed for ${request.url}:`,
+            error
+        );
+
+        // Retry with exponential backoff (limited)
+        if (retries < MAX_RETRIES) {
+            const retryDelay = Math.pow(2, retries) * 500; // 500, 1000, 2000, 4000 ms
+            console.log(
+                `WORKER: Retrying fetch for ${request.url} in ${retryDelay}ms...`
+            );
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve(handleFetchWithRetry(event, request, retries + 1));
+                }, retryDelay);
+            });
+        }
+
+        console.error('WORKER: Fetch request failed after maximum retries.');
+        // Final fallback response
+        return new Response(
+            `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Service Unavailable</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        background-color: #f8f9fa;
+                        color: #333;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                    }
+                    .container {
+                        text-align: center;
+                        max-width: 600px;
+                        padding: 20px;
+                        background-color: #fff;
+                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                        border-radius: 8px;
+                    }
+                    h1 {
+                        font-size: 24px;
+                        color: #d9534f;
+                        margin-bottom: 16px;
+                    }
+                    p {
+                        font-size: 16px;
+                        color: #555;
+                    }
+                    ul {
+                        text-align: left;
+                        display: inline-block;
+                        margin-top: 10px;
+                    }
+                    .button {
+                        display: inline-block;
+                        margin-top: 20px;
+                        padding: 10px 20px;
+                        font-size: 16px;
+                        color: #fff;
+                        background-color: #007bff;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        transition: background-color 0.3s;
+                    }
+                    .button:hover {
+                        background-color: #0056b3;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>Service Unavailable</h1>
+                    <p>Oops! It seems there was a problem retrieving the content. Please try the following:</p>
+                    <ul>
+                        <li>Check your internet connection.</li>
+                        <li>Refresh the page in a few moments.</li>
+                        <li>Contact support if the problem persists.</li>
+                    </ul>
+                    <button class="button" onclick="location.reload()">Try Again</button>
+                </div>
+            </body>
+            </html>
+        `,
+            {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: new Headers({ 'Content-Type': 'text/html' }),
+            }
+        );
+    }
+}
+
+// ================== HELPERS ================== //
+
+function isCacheable(response, url) {
+    const extension = getUrlExtension(url).toLowerCase();
+    const scheme = new URL(url).protocol;
+
+    return (
+        (scheme === 'http:' || scheme === 'https:') &&
+        CACHEABLE_EXTENSIONS.includes(extension)
+    );
+}
+
+function getUrlExtension(url) {
+    return typeof url === 'string'
+        ? url.split(/[#?]/)[0].split('.').pop().trim()
+        : '';
+}
+
+// Fetch with timeout (short to avoid hanging requests)
+function fetchWithTimeout(request, timeout = 20000) {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(
+            () => reject(new Error('Request timed out')),
+            timeout
+        );
+
+        fetch(request).then(
+            (response) => {
+                clearTimeout(timer);
+                resolve(response);
+            },
+            (err) => {
+                clearTimeout(timer);
+                reject(err);
+            }
+        );
+    });
+}
+
+// Update cache in background
+async function updateCache(request) {
+    try {
+        const response = await fetchWithTimeout(request);
+        if (response && isCacheable(response, request.url)) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(request, response.clone());
+            console.log(`WORKER: Updated cache for ${request.url}`);
+            await enforceCacheSizeLimit(cache);
+        }
+    } catch (error) {
+        console.error(`WORKER: Failed to update cache for ${request.url}:`, error);
+    }
+}
+
+// Enforce cache size limit (simple FIFO)
+async function enforceCacheSizeLimit(cache) {
+    const keys = await cache.keys();
+    if (keys.length > MAX_CACHE_ITEMS) {
+        console.log(
+            `WORKER: Cache size exceeded ${MAX_CACHE_ITEMS}. Removing oldest item.`
+        );
+        await cache.delete(keys[0]);
+    }
 }
