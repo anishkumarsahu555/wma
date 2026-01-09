@@ -185,7 +185,8 @@ def admin_home(request):
 @check_groups('Owner','Manager','Admin')
 def manage_staff(request):
     logger.info("Manage staff called")
-    groups = UserGroup.objects.filter(isDeleted=False)
+    owner_id = get_owner_id(request)
+    groups = UserGroup.objects.filter(isDeleted=False, ownerID_id=owner_id)
 
     context = {
         'groups': groups
