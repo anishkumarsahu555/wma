@@ -1,7 +1,7 @@
 {% extends 'wmaApp/baseIndex.html' %}
 {% load static %}
 {% block title %}
-<title>Manage Locations</title>
+<title>Driver Jars Allocation</title>
 {% endblock %}
 {% block css %}
 {% endblock %}
@@ -36,25 +36,81 @@
     <div class="sixteen wide column">
         <div class="ui  pointing secondary menu">
             <div style="cursor: pointer;" class="item active" data-tab="user"
-            >Location List
+            >Driver Jars Allocation List
             </div>
             <div style=" position: absolute;right: 1.5rem;top: 18px;">
                 <button class="ui green mini plus button right" onclick="showUserModal()">
                     <i class="plus square outline icon"></i>
-                    Add Location
+                    Add Driver Jars Allocation
                 </button>
             </div>
         </div>
         <div class="ui tab " data-tab="user">
-
             <div class="row" style="padding-left: 5px; padding-right: 5px">
-                <div class="wide">
+                <div class="ui  form">
+                    <form class="ui tiny form" style="text-align:left">
+                        <div class=" fields">
+                            <div class="four wide field" style="width: 30%">
+                                <label>Start Date</label>
+                                <div class="ui calendar" id="rangestart">
+                                    <div class="ui input left icon">
 
+                                        <input class="" type="text" placeholder="Start Date"
+                                               style="width:100%;"
+                                               id="startDateF" >
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="three wide field" style="width: 30%">
+                                <label>End Date</label>
+                                <div class="ui calendar" id="rangeend">
+                                    <div class="ui input left icon">
+
+                                        <input class="" type="text" placeholder="End Date"
+                                               style="width:100%;"
+                                               id="endDateF">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="three wide  field" style="width: 40%">
+                                <label>Staff</label>
+                                <select class="ui fluid search dropdown" id="staffID">
+                                    <option value="All">All</option>
+                                    {% for driver in drivers %}
+                                    <option value="{{ driver.id }}">{{ driver.name|capfirst }}
+                                    </option>
+                                    {% endfor %}
+
+
+                                </select>
+                            </div>
+                            <div class="seven wide field">
+                                <label>Action</label>
+                                <button class="ui tiny active button" type="button"
+                                        onclick="filterDetails()">
+                                    <i class="funnel dollar icon"></i>
+                                    Search
+                                </button>
+                                <!--                                    <a id="reportUrl"-->
+                                <!--                                       href=""-->
+                                <!--                                       style="float: right;"-->
+                                <!--                                       class="teal tiny ui button">Download Report-->
+                                <!--                                    </a>-->
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="wide">
                     <table class="ui blue unstackable tiny sortable celled very nowrap very compact table" id="UserTable"
                            style="margin-top: 5px;width: 100%">
                         <thead>
                         <tr>
-                            <th>Name</th>
+                            <th>Driver Name</th>
+                            <th>In-Jar</th>
+                            <th>Out-Jar</th>
+                            <th>Remark</th>
+                            <th>AddedBy</th>
+                            <th>Date</th>
                             <th>Added On</th>
                             <th>Actions</th>
                         </tr>
@@ -67,21 +123,40 @@
                 <div class="ui modal" id="myModalUser">
                     <i class="close icon"></i>
                     <div class="header">
-                        Add Location
+                        Add Jar Allocation
                     </div>
                     <div class="content">
-
                         <form class="ui tiny form" id="addForm">{% csrf_token %}
-
                             <div class="one required fields">
                                 <div class="sixteen wide field">
-                                    <label>Location Name</label>
-                                    <input type="text" name="Name" placeholder="Location Name" id="CompanyUserName">
+                                    <label>Driver</label>
+                                    <select class="ui clearable search dropdown" id="driver">
+                                        <option value="">Search By Driver Name</option>
+                                        {% for driver in drivers %}
+                                        <option value="{{ driver.id }}">{{ driver.name|capfirst }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
-
                             </div>
-                        </form>
+                            <div class="two unstackable required fields">
 
+                                <div class="eight wide field">
+                                    <label>Jar-In</label>
+                                    <input type="number" name="Jar-In" placeholder="Jar-In" id="in">
+                                </div>
+                                <div class="eight wide field">
+                                    <label>Jar-out</label>
+                                    <input type="number" name="Jar-Out" placeholder="Jar-Out" id="out">
+                                </div>
+                            </div>
+                            <div class="one fields">
+                                <div class="sixteen wide field">
+                                    <label>Any Remark</label>
+                                    <textarea name="remark" id="remark" placeholder="remark" rows="2"></textarea>
+                                </div>
+                            </div>
+
+                        </form>
                         <div class="actions" style="padding-top: 20px; padding-bottom: 20px ;float: right">
                             <div class="ui cancel button">Cancel</div>
                             <button class="ui right labeled icon button green saveBtn" onclick="addDetail()">
@@ -100,7 +175,7 @@
             <div class="ui basic modal custom" id="deleteUser">
                 <div class="ui icon header">
                     <i class="archive icon"></i>
-                     Details will be Deleted
+                    Details will be Deleted
                 </div>
                 <div class="content">
                     <p style="text-align: center">The detail will be deleted, are you sure to delete this Detail?</p>
@@ -129,10 +204,31 @@
 
                         <div class="one required fields">
                             <div class="sixteen wide field">
-                                <label>Location Name</label>
-                                <input type="text" name="Name" placeholder="Location Name" id="CompanyUserNameEdit">
+                                <label>Customer</label>
+                                <select class="ui clearable search dropdown" id="driverEdit">
+                                    <option value="">Search By Driver Name</option>
+                                    {% for driver in drivers %}
+                                    <option value="{{ driver.id }}">{{ driver.name|capfirst }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
+                        </div>
+                        <div class="two unstackable required fields">
 
+                            <div class="eight wide field">
+                                <label>Jar-In</label>
+                                <input type="number" name="Jar-In" placeholder="Jar-In" id="inEdit">
+                            </div>
+                            <div class="eight wide field">
+                                <label>Jar-out</label>
+                                <input type="number" name="Jar-Out" placeholder="Jar-Out" id="outEdit">
+                            </div>
+                        </div>
+                        <div class="one fields">
+                            <div class="sixteen wide field">
+                                <label>Any Remark</label>
+                                <textarea name="remark" id="remarkEdit" placeholder="remark" rows="2"></textarea>
+                            </div>
                         </div>
 
                         <input type="hidden" id="EditUserId">
@@ -160,6 +256,37 @@
 
 {% block js %}
 <script>
+    var today = new Date();
+    $('#rangestart').calendar({
+        initialDate: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
+        monthFirst: false,
+        type: 'date',
+        endCalendar: $('#rangeend'),
+        formatter: {
+            date: function (date, settings) {
+                if (!date) return '';
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                return day + '/' + month + '/' + year;
+            }
+        }
+    });
+    $('#rangeend').calendar({
+        initialDate: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
+        monthFirst: false,
+        type: 'date',
+        startCalendar: $('#rangestart'),
+        formatter: {
+            date: function (date, settings) {
+                if (!date) return '';
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                return day + '/' + month + '/' + year;
+            }
+        }
+    });
 
     var userTab;
 
@@ -172,12 +299,15 @@
 
     function addDetail() {
         showLoading();
-        var CompanyUserName = $('#CompanyUserName').val();
-        if (CompanyUserName === '') {
+        var driver = $('#driver').val();
+        var jar_in = $('#in').val();
+        var jar_out = $('#out').val();
+        var remark = $('#remark').val();
+        if (driver === ''|| jar_in === '' || jar_out === '' ) {
             $('body')
                 .toast({
                     class: 'orange',
-                    message: 'Name is required'
+                    message: '* fields are required'
                 })
             ;
             hideLoading();
@@ -186,19 +316,19 @@
         var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
 
         data = new FormData();
-        data.append('name', CompanyUserName);
+        data.append('driver', driver);
+        data.append('jar_in', jar_in);
+        data.append('jar_out', jar_out);
+        data.append('remark', remark);
         data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
-        debugger;
-
         $.ajax({
             type: 'post',
-            url: "{% url 'wma_api:add_location_api' %}",
+            url: "{% url 'wma_api:add_jar_allocation_api' %}",
             data: data,
             contentType: false,
             cache: false,
             processData: false,
             success: function (response) {
-                console.log(response);
                 if (response.success) {
                     $('body')
                         .toast({
@@ -268,7 +398,7 @@
         buttons: [{
             extend: 'excel',
             exportOptions: {
-                columns: [1, 2, 3]
+                columns: [0,1, 2, 3,4,5,6]
             }
         }
 
@@ -277,16 +407,21 @@
             lengthMenu: "_MENU_ entries"
         },
         "columnDefs": [
-            {"name": "name", "targets": 0, "orderable": true},
-            {"name": "datetime", "targets": 1, "orderable": true},
-            {"name": "action", "targets": 2, "orderable": false}
+            {"name": "driverID", "targets": 0, "orderable": true},
+            {"name": "inJar", "targets": 1, "orderable": true},
+            {"name": "outJar", "targets": 2, "orderable": true},
+            {"name": "remark", "targets": 3, "orderable": true},
+            {"name": "addedByID", "targets": 4, "orderable": true},
+            {"name": "date", "targets": 5, "orderable": true},
+            {"name": "datetime", "targets": 6, "orderable": true},
+            {"name": "action", "targets": 7, "orderable": false}
         ],
-        aaSorting: [[1, 'desc']],
+        aaSorting: [[6, 'desc']],
         "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         "pageLength": 10,
         "processing": true,
         "serverSide": true,
-        "ajax": "{% url 'wma_api:LocationListJson' %}"
+        "ajax": "{% url 'wma_api:JarAllocationListJson' %}"
     });
 
 
@@ -303,7 +438,7 @@
         formdata.append('id', id);
 
         $.ajax({
-            url: "{% url 'wma_api:delete_location_api' %}",
+            url: "{% url 'wma_api:delete_jar_allocation_api' %}",
             type: "post",
             data: formdata,
             contentType: false,
@@ -348,18 +483,18 @@
     function GetUserDetails(id) {
         myOwnReset();
         $('#userModal').modal('show');
-        // var formdata = new FormData();
-        // formdata.append('id', id);
-        debugger;
         $.ajax({
             type: 'get',
-            url: "{% url 'wma_api:get_location_detail' %}",
+            url: "{% url 'wma_api:get_jar_allocation_detail' %}",
             data: { id: id },
             success: function (response) {
 
                 console.log(response);
                 $('#EditUserId').val(response.data['id']);
-                $('#CompanyUserNameEdit').val(response.data['name']);
+                $('#driverEdit').val(response.data['driverID']).change();
+                $('#inEdit').val(response.data['inJar']);
+                $('#outEdit').val(response.data['outJar']);
+                $('#remarkEdit').val(response.data['remark']);
 
             },
             error: function () {
@@ -376,13 +511,16 @@
     function editDetail() {
         showLoading();
         var id = $('#EditUserId').val();
-        var CompanyUserName = $('#CompanyUserNameEdit').val();
+        var driver = $('#driverEdit').val();
+        var jar_in = $('#inEdit').val();
+        var jar_out = $('#outEdit').val();
+        var remark = $('#remarkEdit').val();
 
-        if (CompanyUserName === '') {
+        if (driver === ''|| jar_in === '' || jar_out === '') {
             $('body')
                 .toast({
                     class: 'orange',
-                    message: 'Name is required'
+                    message: '* fields are required'
                 })
             ;
             hideLoading();
@@ -392,13 +530,15 @@
 
         data = new FormData();
         data.append('id', id);
-        data.append('name', CompanyUserName);
+        data.append('driver', driver);
+        data.append('jar_in', jar_in);
+        data.append('jar_out', jar_out);
+        data.append('remark', remark);
         data.append('csrfmiddlewaretoken', csrfmiddlewaretoken);
-        debugger;
 
         $.ajax({
             type: 'post',
-            url: "{% url 'wma_api:update_location_api' %}",
+            url: "{% url 'wma_api:update_jar_allocation_api' %}",
             data: data,
             contentType: false,
             cache: false,
@@ -479,6 +619,15 @@
     function myOwnReset(){
         $('.ui.form').form('reset');
     }
+
+    function filterDetails() {
+        var startDate = $('#startDateF').val();
+        var endDate = $('#endDateF').val();
+        var staffID = $('#staffID').val();
+        userTab.ajax.url('{% url 'wma_api:JarAllocationListJson' %}?startDate=' + startDate + '&endDate=' + endDate + '&staffID=' + staffID).load();
+
+    }
+
 </script>
 
 {% endblock %}

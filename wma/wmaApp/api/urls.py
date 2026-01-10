@@ -100,4 +100,11 @@ urlpatterns = [
     path('update_booking_api/', update_booking_api, name='update_booking_api'),
     path('delete_booking_api/', delete_booking_api, name='delete_booking_api'),
 
+    # Jar Allocation
+    path('add_jar_allocation_api/', add_jar_allocation_api, name='add_jar_allocation_api'),
+    path('JarAllocationListJson/', JarAllocationListJson.as_view(), name='JarAllocationListJson'),
+    path('update_jar_allocation_api/', update_jar_allocation_api, name='update_jar_allocation_api'),
+    path('delete_jar_allocation_api/', delete_jar_allocation_api, name='delete_jar_allocation_api'),
+    path('get_jar_allocation_detail/', get_jar_allocation_detail, name='get_jar_allocation_detail'),
+    path('DriverWiseJarAllocationListJson/', DriverWiseJarAllocationListJson.as_view(), name='DriverWiseJarAllocationListJson'),
 ]

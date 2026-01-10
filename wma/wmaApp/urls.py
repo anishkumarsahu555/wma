@@ -38,4 +38,6 @@ urlpatterns = [
     path('booking_list/', views.booking_list, name='booking_list'),
     path('edit_booking/<int:id>/', views.edit_booking, name='edit_booking'),
     path('detail_booking/<int:id>/', views.detail_booking, name='detail_booking'),
+    path('driver_jar_allocation/', views.driver_jar_allocation, name='driver_jar_allocation'),
+    path('my_jar_allocations/', views.my_jar_allocations, name='my_jar_allocations'),
 ]

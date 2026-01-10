@@ -143,7 +143,7 @@
                     <div class="content">
 
                         <form class="ui tiny form" id="addForm">{% csrf_token %}
-                            <div class="one fields required">
+                            <div class="one fields">
                                 <div class="sixteen wide field">
                                     <label>Photo</label>
 
@@ -418,12 +418,12 @@
         var UserAddress = $('#UserAddress').val();
         var UserGroup = $('#UserGroup').val();
 
-        if (CompanyUserName === '' || UserPhoneNo === '' || imageUpload === undefined ||
+        if (CompanyUserName === '' || UserPhoneNo === '' ||
             UserAddress === '' || UserGroup === '') {
             $('body')
                 .toast({
                     class: 'orange',
-                    message: 'User Name, Phone Number, Photo, Address ... are required !. '
+                    message: 'User Name, Phone Number, Address ... are required !. '
                 })
             ;
             hideLoading();

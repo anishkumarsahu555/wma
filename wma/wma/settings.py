@@ -158,20 +158,33 @@ MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), "media_cdn")
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 
-
-PWA_APP_NAME = 'WMA'
+PWA_APP_NAME = "WMA"
+PWA_APP_SHORT_NAME = "WMA"
 PWA_APP_DESCRIPTION = "Water Management App."
-PWA_APP_THEME_COLOR = '#1e353e'
-PWA_APP_DISPLAY = 'standalone'
-PWA_APP_START_URL = '/'
-PWA_APP_ICONS = [
-    {"src": "static/sw/images/favicon.ico", "type": "image/x-icon", "sizes": "16x16 32x32"},
-    {"src": "static/sw/images/icon-192.png", "type": "image/png", "sizes": "192x192"},
-    {"src": "static/sw/images/icon-512.png", "type": "image/png", "sizes": "512x512"},
-    {"src": "static/sw/images/icon-192-maskable.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable"},
-    {"src": "static/sw/images/icon-512-maskable.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable"}
-]
 
+PWA_APP_THEME_COLOR = "#1e353e"
+PWA_APP_BACKGROUND_COLOR = "#1e353e"
+
+PWA_APP_DISPLAY = "standalone"
+PWA_APP_ORIENTATION = "portrait"
+PWA_APP_START_URL = "/"
+
+PWA_APP_ICONS = [
+    {"src": "/static/sw/images/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/sw/images/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {
+        "src": "/static/sw/images/icon-192-maskable.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "maskable",
+    },
+    {
+        "src": "/static/sw/images/icon-512-maskable.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "maskable",
+    },
+]
 
 PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'wmaApp', '../static/sw/serviceworker.js')
 

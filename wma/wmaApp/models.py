@@ -345,3 +345,18 @@ class JarCounter(models.Model):
 
     def __str__(self):
         return self.customerID.name
+
+class JarAllocation(models.Model):
+    ownerID = models.ForeignKey(Owner, on_delete=models.CASCADE,null=True, blank=True)
+    driverID = models.ForeignKey(StaffUser, on_delete=models.CASCADE,null=True, blank=True, related_name='driverID')
+    inJar = models.FloatField(default=0.00)
+    outJar = models.FloatField(default=0.00)
+    remark = models.TextField( blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    addedByID = models.ForeignKey(StaffUser, on_delete=models.CASCADE, null=True, blank=True, related_name='addedByID')
+    isDeleted = models.BooleanField(default=False)
+    dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
+    lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
+
+    def __str__(self):
+        return self.driverID.name

@@ -12,6 +12,11 @@
     {% endblock %}
 
     {% progressive_web_app_meta %}
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WMA">
+    
 
     <link rel="icon" href="{% static 'sw/images/favicon.ico' %}" sizes="any">
     <link rel="apple-touch-icon" href="{% static 'sw/images/apple-touch-icon.png' %}">
@@ -272,6 +277,17 @@
     </div>
     <div class="item">
         <div class="header">
+            Manage Jars Allocation
+        </div>
+        <div class="menu">
+            <a class="item" href="{% url 'wmaApp:driver_jar_allocation' %}">
+                <div><i class="cart arrow down icon"></i>Driver Jar Allocation</div>
+            </a>
+    
+        </div>
+    </div>
+    <div class="item">
+        <div class="header">
             Manage Payments
         </div>
         <div class="menu">
@@ -376,6 +392,17 @@ Driver side bar
     </div>
     <div class="item">
         <div class="header">
+            My Jars
+        </div>
+        <div class="menu">
+            <a class="item" href="{% url 'wmaApp:my_jar_allocations' %}">
+                <div><i class="truck icon"></i>My Jar Allocation</div>
+            </a>
+    
+        </div>
+    </div>
+    <div class="item">
+        <div class="header">
             Manage Payments
         </div>
         <div class="menu">
@@ -422,7 +449,7 @@ Driver side bar
             <i class="sidebar icon"></i>
         </a>
         <img class="logo logoImg" src="{% static 'sw/images/icon-192.png' %}">
-        <a href="#" class="header item">
+        <a href="{% url 'wmaApp:dashboard' %}" class="header item">
 
            WMA
         </a>
