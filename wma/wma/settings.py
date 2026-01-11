@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-3^5f+v584v+)jpv%pye*e6m$)+uoiv5u$hyq()^%lk9h^a7hcb
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["wmapp.in","www.wmapp.in", "*"]
 
 
 # Application definition
@@ -203,3 +203,10 @@ CORS_ALLOWED_ORIGINS = [
     'https://wmapp.in',
     'https://www.wmapp.in',
 ]
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://wmapp.in",
+    "https://www.wmapp.in",
+]
+
