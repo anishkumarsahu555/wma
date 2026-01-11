@@ -3454,13 +3454,20 @@ def upload_customer_csv_api(request):
                     continue
 
                 # -------- CUSTOMER CREATE --------
-                Customer.objects.create(
+                c_obj = Customer.objects.create(
                     name=name,
                     address=address,
                     locationID=location,
                     ownerID_id=owner_id,
                     addedDate=datetime.now(),
                 )
+                customer_count = (
+                    Customer.objects.select_related()
+                    .filter(ownerID_id=get_owner_id(request))
+                    .count()
+                )
+                c_obj.customerId = "CID" + str(customer_count).zfill(8)
+                c_obj.save()
 
                 created_count += 1
 
