@@ -31,6 +31,8 @@ urlpatterns = [
     path('delete_customer/', delete_customer, name='delete_customer'),
     path('get_customer_detail/', get_customer_detail, name='get_customer_detail'),
     path('update_customer_api/', update_customer_api, name='update_customer_api'),
+    path('upload_customer_csv_api/', upload_customer_csv_api, name='upload_customer_csv_api'),
+
 
     # category api urls
     path('add_category_api/', add_category_api, name='add_category_api'),

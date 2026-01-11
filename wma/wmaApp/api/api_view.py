@@ -738,7 +738,7 @@ def add_customer_api(request):
 
 @csrf_exempt
 @require_http_methods(["POST"])
-@validate_input(["id", "name", "email", "location", "address", "phone"])
+@validate_input(["id", "name", "location", "address", "phone"])
 @transaction.atomic
 def update_customer_api(request):
     data = request.POST.dict()
@@ -871,9 +871,9 @@ def get_customer_detail(request):
                 "name": obj.name,
                 "email": obj.email,
                 "location": obj.locationID.id,
-                "phone": obj.phone,
+                "phone": obj.phone or '',
                 "address": obj.address,
-                "profile_pic": obj.profile_pic.url,
+                "profile_pic": obj.profile_pic.url if obj.profile_pic else None,
             }
             logger.info("Customer user fetched successfully")
             return SuccessResponse(
@@ -3391,3 +3391,89 @@ class DriverWiseJarAllocationListJson(BaseDatatableView):
             )
 
         return json_data
+
+import csv
+from pathlib import Path
+@csrf_exempt
+@require_http_methods(["GET"])
+@transaction.atomic
+def upload_customer_csv_api(request):
+    try:
+        owner_id = get_owner_id(request)
+
+        # -------- READ CSV FROM PROJECT DIRECTORY --------
+        BASE_DIR = Path(__file__).resolve().parent.parent
+        print(BASE_DIR)
+        csv_path = BASE_DIR / "api/c.csv"
+
+        if not csv_path.exists():
+            return ErrorResponse(
+                "customers.csv not found in project directory"
+            ).to_json_response()
+
+        created_count = 0
+        skipped_duplicates = 0
+
+        with open(csv_path, "r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+
+            # -------- REQUIRED COLUMN CHECK --------
+            required_columns = {"Name", "Location", "Address"}
+            if not required_columns.issubset(reader.fieldnames):
+                return ErrorResponse(
+                    "CSV must contain name, location, address columns"
+                ).to_json_response()
+
+            for row in reader:
+                name = row.get("Name", "").strip()
+                location_name = row.get("Location", "").strip()
+                address = row.get("Address", "").strip()
+
+                if not name or not location_name or not address:
+                    continue
+
+                # -------- LOCATION GET / CREATE --------
+                location, _ = Location.objects.get_or_create(
+                    name__iexact=location_name,
+                    ownerID_id=owner_id,
+                    defaults={
+                        "name": location_name,
+                        "ownerID_id": owner_id,
+                        "isDeleted": False,
+                    }
+                )
+
+                # -------- DUPLICATE CUSTOMER CHECK --------
+                if Customer.objects.filter(
+                    name__iexact=name,
+                    address__iexact=address,
+                    locationID=location,
+                    ownerID_id=owner_id,
+                ).exists():
+                    skipped_duplicates += 1
+                    continue
+
+                # -------- CUSTOMER CREATE --------
+                Customer.objects.create(
+                    name=name,
+                    address=address,
+                    locationID=location,
+                    ownerID_id=owner_id,
+                    addedDate=datetime.now(),
+                )
+
+                created_count += 1
+
+        cache.delete(f"CustomerList{owner_id}")
+
+        return SuccessResponse(
+            f"{created_count} customers added, {skipped_duplicates} duplicates skipped"
+        ).to_json_response()
+
+    except Exception as e:
+        logger.info(f"Error in upload_customer_csv_api: {e}")   
+        logger.exception("Customer CSV upload failed")
+        return ErrorResponse(
+            "Failed to upload CSV. Please verify file format."
+        ).to_json_response()
+    
