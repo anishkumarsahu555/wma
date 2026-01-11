@@ -197,3 +197,9 @@ CACHES = {
         }
     }
 }
+
+
+CORS_ALLOWED_ORIGINS = [
+    'https://wmapp.in',
+    'https://www.wmapp.in',
+]
