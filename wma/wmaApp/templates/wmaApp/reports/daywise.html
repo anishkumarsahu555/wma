@@ -1,0 +1,81 @@
+{% load custom_has_group_tag %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WMAPP</title>
+    <style>
+        @page {
+            size: A5;
+            margin: .3cm;
+        }
+
+
+    </style>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <span style="font-size: 10px;">Sales Report for Date: {{ startDate|date }} to {{ endDate|date }}</span>
+    </div>
+
+
+    <table style="font-size: 10px">
+        <tr>
+            <th>Location</th>
+            <th>Total Sales(₹)</th>
+            <th>Total Payment(₹)</th>
+            <th>Total Due(₹)</th>
+        </tr>
+        <tr>
+            <td>{{ location }}</td>
+            <td>{{ sales_total|convert }}</td>
+            <td>{{ payment_total|convert }}</td>
+            <td>{{ due_total|convert }}</td>
+        </tr>
+    </table>
+    <p style="font-size: 10px; margin: 2px;padding-top: 10px">Sales Details</p>
+
+    <table style="font-size: 10px">
+        <tr>
+            <th>CustomerName</th>
+            <th>Location</th>
+            <th>Amount(₹)</th>
+            <th>Payment(₹)</th>
+            <th>Due(₹)</th>
+            <th>CreatedBy</th>
+        </tr>
+        {% for foo in col %}
+
+            <tr>
+                <td>{{ foo.name }}</td>
+                <td>{{ foo.locationID.name }}</td>
+                <td>{{ foo.sales_amount|convert }}</td>
+                <td>{{ foo.payment_amount|convert }}</td>
+                <td>{{ foo.due_amount|convert }}</td>
+                <td>{{ foo.addedByID.name }}</td>
+            </tr>
+        {% endfor %}
+
+    </table>
+</div>
+
+</body>
+</html>
