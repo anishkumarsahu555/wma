@@ -10,7 +10,7 @@ from wmaApp.models import Sales, Location, JarCounter, Expense, Payment, Custome
 from wmaApp.api.api_view import get_owner_id
 from django.db.models import Sum, OuterRef, Subquery, FloatField, Value, F, Q
 from utils.logger import logger
-
+from utils.custom_response import ErrorResponse
 
 @csrf_exempt
 def download_report_pdf(request):
@@ -162,85 +162,90 @@ def get_daywise_customer_summary(request, report_date, owner_id, location):
     logger.info("Generating daywise customer summary for owner_id: %s", owner_id)
 
     # ---- Sales total per customer for the day ----
+    try:
+        if location == "All":
+            sales_day_subquery = Sales.objects.filter(
+                isDeleted=False,
+                ownerID=owner_id,
+                customerID=OuterRef("pk"),
+                saleDate=report_date
+                ).values("customerID").annotate(
+                    day_sales=Sum("totalAmountAfterTax")
+                ).values("day_sales")[:1]
 
-    if location == "All":
-        sales_day_subquery = Sales.objects.filter(
+        # ---- Payment total per customer for the day ----
+            payment_day_subquery = Payment.objects.filter(
             isDeleted=False,
             ownerID=owner_id,
             customerID=OuterRef("pk"),
-            saleDate=report_date
+            paymentDate=report_date,
             ).values("customerID").annotate(
-                day_sales=Sum("totalAmountAfterTax")
-            ).values("day_sales")[:1]
+                day_payment=Sum("paymentAmount")
+            ).values("day_payment")[:1]
+        else:
+            sales_day_subquery = Sales.objects.filter(
+                isDeleted=False,
+                ownerID=owner_id,
+                customerID=OuterRef("pk"),
+                saleDate=report_date,
+                customerID__locationID_id=int(location)
+                ).values("customerID").annotate(
+                    day_sales=Sum("totalAmountAfterTax")
+                ).values("day_sales")[:1]
 
-    # ---- Payment total per customer for the day ----
-        payment_day_subquery = Payment.objects.filter(
-        isDeleted=False,
-        ownerID=owner_id,
-        customerID=OuterRef("pk"),
-        paymentDate=report_date,
-        ).values("customerID").annotate(
-            day_payment=Sum("paymentAmount")
-        ).values("day_payment")[:1]
-    else:
-        sales_day_subquery = Sales.objects.filter(
+        # ---- Payment total per customer for the day ----
+            payment_day_subquery = Payment.objects.filter(
             isDeleted=False,
             ownerID=owner_id,
             customerID=OuterRef("pk"),
-            saleDate=report_date,
+            paymentDate=report_date,
             customerID__locationID_id=int(location)
             ).values("customerID").annotate(
-                day_sales=Sum("totalAmountAfterTax")
-            ).values("day_sales")[:1]
-
-    # ---- Payment total per customer for the day ----
-        payment_day_subquery = Payment.objects.filter(
-        isDeleted=False,
-        ownerID=owner_id,
-        customerID=OuterRef("pk"),
-        paymentDate=report_date,
-        customerID__locationID_id=int(location)
-        ).values("customerID").annotate(
-            day_payment=Sum("paymentAmount")
-        ).values("day_payment")[:1]
+                day_payment=Sum("paymentAmount")
+            ).values("day_payment")[:1]
 
 
-    # ---- Main queryset ----
-    qs = Customer.objects.filter(
-        isDeleted=False,
-        ownerID_id=owner_id
-    ).annotate(
-        sales_amount=Coalesce(
-            Subquery(sales_day_subquery, output_field=FloatField()),
-            Value(0.0)
-        ),
-        payment_amount=Coalesce(
-            Subquery(payment_day_subquery, output_field=FloatField()),
-            Value(0.0)
-        ),
-        due_amount=F("sales_amount") - F("payment_amount")
-    ).filter(
-        Q(sales_amount__gt=0) | Q(payment_amount__gt=0)
-    ).select_related("locationID")
-    context ={
-        'startDate': report_date,
-        'endDate': report_date,
-        'col': qs,
-        'location': 'All' if location == 'All' else Location.objects.get(id=location, ownerID_id=owner_id).name,
+        # ---- Main queryset ----
+        qs = Customer.objects.filter(
+            isDeleted=False,
+            ownerID_id=owner_id
+        ).annotate(
+            sales_amount=Coalesce(
+                Subquery(sales_day_subquery, output_field=FloatField()),
+                Value(0.0)
+            ),
+            payment_amount=Coalesce(
+                Subquery(payment_day_subquery, output_field=FloatField()),
+                Value(0.0)
+            ),
+            due_amount=F("sales_amount") - F("payment_amount")
+        ).filter(
+            Q(sales_amount__gt=0) | Q(payment_amount__gt=0)
+        ).select_related("locationID")
+        context ={
+            'startDate': report_date,
+            'endDate': report_date,
+            'col': qs,
+            'location': 'All' if location == 'All' else Location.objects.get(id=location, ownerID_id=owner_id).name,
 
-    }
-    sales_total = qs.aggregate(Sum('sales_amount'))
-    context['sales_total'] = sales_total['sales_amount__sum'] or 0
-    payment_total = qs.aggregate(Sum('payment_amount'))
-    context['payment_total'] = payment_total['payment_amount__sum'] or 0
-    due_total = qs.aggregate(Sum('due_amount'))
-    context['due_total'] = due_total['due_amount__sum'] or 0
+        }
+        sales_total = qs.aggregate(Sum('sales_amount'))
+        context['sales_total'] = sales_total['sales_amount__sum'] or 0
+        payment_total = qs.aggregate(Sum('payment_amount'))
+        context['payment_total'] = payment_total['payment_amount__sum'] or 0
+        due_total = qs.aggregate(Sum('due_amount'))
+        context['due_total'] = due_total['due_amount__sum'] or 0
 
-    response = HttpResponse(content_type="application/pdf")
-    response['Content-Disposition'] = "report.pdf"
-    html = render_to_string("wmaApp/reports/daywise.html", context)
+        response = HttpResponse(content_type="application/pdf")
+        response['Content-Disposition'] = "report.pdf"
+        html = render_to_string("wmaApp/reports/daywise.html", context)
 
-    HTML(string=html).write_pdf(response, stylesheets=[CSS(string='@page { size: A5; margin: .3cm ; }')])
-    return response
+        HTML(string=html).write_pdf(response, stylesheets=[CSS(string='@page { size: A5; margin: .3cm ; }')])
+        return response
 
-        
+            
+    except Exception as e:
+        logger.error(f"Error while generating daywise customer summary: {e}")
+        return ErrorResponse(
+            "Unable to generate daywise customer summary. Please try again"
+        ).to_json_response()
