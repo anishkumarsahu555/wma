@@ -122,6 +122,7 @@
                             <th>Photo</th>
                             <th>CustomerID</th>
                             <th>Name</th>
+                            <th>Due Amount(₹)</th>
                             <th>Location</th>
                             <th>PhoneNo.</th>
                             <th>Address</th>
@@ -518,14 +519,15 @@
             {"name": "photo", "targets": 0, "orderable": false},
             {"name": "customerId", "targets": 1, "orderable": true},
             {"name": "name", "targets": 2, "orderable": true},
-            {"name": "locationID", "targets": 3, "orderable": true},
-            {"name": "phone", "targets": 4, "orderable": true},
-            {"name": "address", "targets": 5, "orderable": true},
-            {"name": "addedByID", "targets": 6, "orderable": true},
-            {"name": "datetime", "targets": 7, "orderable": true},
-            {"name": "action", "targets": 8, "orderable": false}
+            {"name": "due_amount", "targets": 3, "orderable": true},
+            {"name": "locationID", "targets": 4, "orderable": true},
+            {"name": "phone", "targets": 5, "orderable": true},
+            {"name": "address", "targets": 6, "orderable": true},
+            {"name": "addedByID", "targets": 7, "orderable": true},
+            {"name": "datetime", "targets": 8, "orderable": true},
+            {"name": "action", "targets": 9, "orderable": false}
         ],
-        aaSorting: [[7, 'desc']],
+        aaSorting: [[2, 'asc']],
         "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         "pageLength": 10,
         "processing": true,

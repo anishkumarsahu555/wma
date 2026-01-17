@@ -36,7 +36,7 @@
     <div class="sixteen wide column">
         <div class="ui  pointing secondary menu">
             <div style="cursor: pointer;" class="item active" data-tab="user"
-            >Customer Ledger- {{ object.name }} - {{ object.customerId}}
+            >Customer Ledger- {{ object.name }} - <span class="ui {% if balance > 0 %}red{% else %}green{% endif %} label">Due ₹{{ balance }}</span>
             </div>
            
         </div>
@@ -72,6 +72,7 @@
                             <th>DateTime</th>
                             <th>Credit(₹)</th>
                             <th>Debit(₹)</th>
+                            <th>RunningBalance(₹)</th>
                             <th>Remark</th>
                             <th>AddedBy</th>
                             <th>AddedDate</th>
@@ -285,13 +286,14 @@
             {"name": "addedDate", "targets": 0, "orderable": true},
             {"name": "credit", "targets": 1, "orderable": true},
             {"name": "debit", "targets": 2, "orderable": true},
-            {"name": "remark", "targets": 3, "orderable": true},
-            {"name": "addedByID", "targets": 4, "orderable": true},
-            {"name": "dateCreated", "targets": 5, "orderable": true},
-            {"name": "action", "targets": 6, "orderable": false}
+            {"name": "balance", "targets": 3, "orderable": true},
+            {"name": "remark", "targets": 4, "orderable": true},
+            {"name": "addedByID", "targets": 5, "orderable": true},
+            {"name": "dateCreated", "targets": 6, "orderable": true},
+            {"name": "action", "targets": 7, "orderable": false}
 
         ],
-        aaSorting: [[0, 'desc']],
+        aaSorting: [[6, 'asc']],
         "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         "pageLength": 10,
         "processing": true,

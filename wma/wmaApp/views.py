@@ -455,7 +455,15 @@ def customer_ledger(request, id=None):
     object = get_object_or_404(
         Customer, pk=id, isDeleted=False, ownerID_id=get_owner_id(request)
     )
-    context = {"object": object}
+
+    last_entry = CustomerLedger.objects.filter(
+        customerID_id=id, isDeleted=False, ownerID_id=get_owner_id(request)
+    ).last()
+    if last_entry:
+        running_balance = last_entry.balance
+    else:
+        running_balance = 0
+    context = {"object": object, "balance": running_balance}
     return render(request, "wmaApp/customer/customer_ledger.html", context)
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 from django.db import transaction
-from django.db.models import Q, Sum, Count, Avg
+from django.db.models import Q, Sum, Count, Avg, F, Value
 from django.core.cache import cache
 from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
@@ -15,7 +15,7 @@ from utils.get_user_id_detail import get_owner_id, get_user_id
 from utils.json_validator import validate_input
 from wmaApp.models import *
 from utils.logger import logger
-
+from django.db.models.functions import Coalesce
 
 # ---------------------------- staff user api ---------------------------
 @csrf_exempt
@@ -784,6 +784,7 @@ class CustomerListJson(BaseDatatableView):
         "profile_pic",
         "customerId",
         "name",
+        "due_amount",
         "locationID",
         "phone",
         "address",
@@ -791,10 +792,34 @@ class CustomerListJson(BaseDatatableView):
         "dateCreated",
     ]
 
+
     def get_initial_queryset(self):
-        # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return Customer.objects.select_related().filter(
-            isDeleted__exact=False, ownerID_id=get_owner_id(self.request)
+        owner_id = get_owner_id(self.request)
+
+        return (
+            Customer.objects.filter(
+                isDeleted=False,
+                ownerID_id=owner_id
+            )
+            .annotate(
+                total_debit=Coalesce(
+                    Sum(
+                        'customerledger__debit',
+                        filter=Q(customerledger__isDeleted=False) &
+                            Q(customerledger__ownerID_id=owner_id)
+                    ),
+                    Value(0.0)
+                ),
+                total_credit=Coalesce(
+                    Sum(
+                        'customerledger__credit',
+                        filter=Q(customerledger__isDeleted=False) &
+                            Q(customerledger__ownerID_id=owner_id)
+                    ),
+                    Value(0.0)
+                ),
+                due_amount= F("total_credit") - F("total_debit")
+            )
         )
 
     def filter_queryset(self, qs):
@@ -802,8 +827,8 @@ class CustomerListJson(BaseDatatableView):
         if search:
             qs = qs.filter(
                 Q(name__icontains=search)
-                | Q(customerId__icontains=search)
-                | Q(locationID__icontains=search)
+                | Q(name__icontains=search)
+                | Q(locationID__name__icontains=search)
                 | Q(phone__icontains=search)
                 | Q(address__icontains=search)
                 | Q(addedByID__name__icontains=search)
@@ -818,7 +843,7 @@ class CustomerListJson(BaseDatatableView):
             images = '<img class="ui avatar image" src="{}">'.format(
                 item.profile_pic.thumb.url
                 if item.profile_pic
-                else "/static/images/default-avatar.png"
+                else "/static/images/user-icon.png"
             )
             if (
                 "Owner" in self.request.user.groups.values_list("name", flat=True)
@@ -847,6 +872,7 @@ class CustomerListJson(BaseDatatableView):
                     images,  # escape HTML for security reasons
                     escape(item.customerId),
                     escape(item.name),
+                    escape(f"{item.due_amount:.2f}"),
                     escape(item.locationID.name),
                     escape(item.phone),
                     escape(item.address),
@@ -1761,7 +1787,6 @@ def update_product_api(request):
         "jarIn",
         "jarOut",
         "amountCollected",
-        "remarkAdditional",
         "catering",
     ]
 )
@@ -2785,6 +2810,7 @@ class CustomerLedgerListJson(BaseDatatableView):
         "isCredit",
         "credit",
         "debit",
+        "balance",
         "addedByID",
         "remark",
         "dateCreated",
@@ -2863,6 +2889,7 @@ class CustomerLedgerListJson(BaseDatatableView):
                     escape(item.addedDate.strftime("%d-%m-%Y")),
                     credit,
                     debit,
+                    escape(item.balance),
                     escape(item.remark),
                     escape(item.addedByID.name if item.addedByID else ""),
                     escape(item.dateCreated.strftime("%d-%m-%Y %I:%M %p")),
