@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}WMA Admin{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/wma-admin.css' %}">
+{% endblock %}
+
+{% block branding %}
+<div class="wma-brand">
+  <div class="wma-brand__title">Water Management Admin</div>
+  <div class="wma-brand__subtitle">Operations and Data Control</div>
+</div>
+{% endblock %}
+

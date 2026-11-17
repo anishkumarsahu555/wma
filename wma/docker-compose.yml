@@ -1,0 +1,187 @@
+# ==============================================================================
+# Water Management — Docker Compose bundle
+# Gunicorn + WhiteNoise + uv, persistent storage, optional MySQL 8.4
+# Use ./start.sh --env /absolute/private/app.env --db mysql --docker-up.
+# ==============================================================================
+name: ${COMPOSE_PROJECT_NAME:-${PROJECT_NAME:-watermanagement}-${DEPLOY_ENV:-production}}
+
+x-defaults: &defaults
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "5m"
+      max-file: "2"
+
+x-app: &app
+  <<: *defaults
+  init: true
+  user: "10001:10001"
+  security_opt:
+    - no-new-privileges:true
+  image: &app-image ${APP_IMAGE:-${IMAGE_NAME:-watermanagement}:${APP_IMAGE_TAG:-local}}
+  deploy:
+    resources:
+      limits:
+        cpus: "${WEB_CPUS:-1.0}"
+        memory: ${WEB_MEMORY_LIMIT:-1g}
+        pids: 128
+  pids_limit: 128
+  depends_on:
+    storage-init:
+      condition: service_completed_successfully
+  env_file:
+    - ${APP_ENV_FILE:-.env}
+  environment: &app-env
+    ENV_FILE: ""
+    DEBUG: "false"
+    SECRET_KEY: ${SECRET_KEY:-}
+    ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+    WEB_MAX_REQUESTS: ${WEB_MAX_REQUESTS:-2000}
+    WEB_MAX_REQUESTS_JITTER: ${WEB_MAX_REQUESTS_JITTER:-200}
+    STATIC_ROOT: /static_cdn
+    MEDIA_ROOT: /media_cdn
+    APP_PORT: ${PORT:-${APP_PORT:-8005}}
+    DB_ENGINE: ${DATABASE_ENGINE:-mysql}
+    DATABASE_ENGINE: ${DATABASE_ENGINE:-mysql}
+    WRITE_LOG_ON_FILE: "false"
+    WRITE_LOG_ON_CONSOLE: "true"
+    REDIS_URL: redis://redis:6379/1
+    DB_HOST: mysql
+    DB_PORT: "3306"
+    DB_NAME: ${DEPLOY_DB_NAME:-${DB_NAME:-wma}}
+    DB_USER: ${DB_USER:-wma}
+    DB_PASSWORD: ${DB_PASSWORD:-}
+    # Root credentials are only needed by the database, never by Django.
+    MYSQL_ROOT_PASSWORD: ""
+  volumes: &app-volumes
+    - type: bind
+      source: ${MEDIA_DATA_DIR:-${APP_DATA_ROOT:-${VPS_STORAGE_ROOT:-/srv/apps}/${PROJECT_NAME:-watermanagement}/${DEPLOY_ENV:-production}}/media_data}
+      target: /media_cdn
+      bind:
+        create_host_path: true
+    - type: bind
+      source: ${APP_DATA_ROOT:-${VPS_STORAGE_ROOT:-/srv/apps}/${PROJECT_NAME:-watermanagement}/${DEPLOY_ENV:-production}}/data
+      target: /data
+      bind:
+        create_host_path: true
+
+services:
+  # One-shot storage preparation; only this job runs as root.
+  storage-init:
+    <<: *defaults
+    image: *app-image
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+    user: "0:0"
+    entrypoint: [/bin/sh, -ec]
+    # Only application directories; the official MySQL image owns its own data.
+    command: ["mkdir -p /media_cdn /data; chown 10001:10001 /media_cdn /data; chmod 0750 /media_cdn /data"]
+    volumes: *app-volumes
+    healthcheck:
+      disable: true
+
+  # Disposable migration job; the launcher waits for the selected database first.
+  migrate:
+    <<: *app
+    restart: "no"
+    profiles: [deploy, tools]
+    entrypoint: [uv, run, --no-sync, python, manage.py]
+    command: [migrate, --noinput]
+    healthcheck:
+      disable: true
+
+  # MySQL is private to this Compose network. Existing service identity is retained.
+  mysql:
+    <<: *defaults
+    profiles: [mysql]
+    image: mysql:8.4
+    stop_grace_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "${MYSQL_CPUS:-1.0}"
+          memory: ${MYSQL_MEMORY_LIMIT:-1g}
+          pids: 256
+    pids_limit: 256
+    depends_on:
+      storage-init:
+        condition: service_completed_successfully
+    command:
+      - --character-set-server=utf8mb4
+      - --innodb-buffer-pool-size=${MYSQL_BUFFER_POOL_SIZE:-64M}
+      - --max-connections=${MYSQL_MAX_CONNECTIONS:-30}
+      - --table-open-cache=200
+      - --temptable-max-ram=64M
+      - --tmp-table-size=16M
+      - --max-heap-table-size=16M
+      - --performance-schema=OFF
+      # Retain per-commit redo/binlog durability for invoices and collections.
+      - --innodb-flush-log-at-trx-commit=1
+      - --sync-binlog=1
+      - --binlog-expire-logs-seconds=${MYSQL_BINLOG_EXPIRE_SECONDS:-604800}
+      - --max-binlog-size=64M
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-wma}
+      MYSQL_USER: ${DB_USER:-wma}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-}
+    volumes:
+      - type: bind
+        source: ${MYSQL_DATA_DIR:-${APP_DATA_ROOT:-${VPS_STORAGE_ROOT:-/srv/apps}/${PROJECT_NAME:-watermanagement}/${DEPLOY_ENV:-production}}/mysql_data}
+        target: /var/lib/mysql
+        bind:
+          create_host_path: true
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$${MYSQL_PASSWORD}" mysql --protocol=TCP -h 127.0.0.1 -u "$${MYSQL_USER}" "$${MYSQL_DATABASE}" -e "SELECT 1" >/dev/null']
+      interval: 30s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  redis:
+    <<: *defaults
+    image: redis:7-alpine
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # Application server; immutable static assets are already included in the image.
+  web:
+    <<: *app
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.12-slim}
+        UV_IMAGE: ${UV_IMAGE:-ghcr.io/astral-sh/uv:0.8.5}
+    environment:
+      <<: *app-env
+      WEB_WORKERS: ${WEB_WORKERS:-1}
+      WEB_TIMEOUT: ${WEB_TIMEOUT:-120}
+    stop_grace_period: 45s
+    command:
+      - ./start.sh
+      - --prod
+      - --host
+      - 0.0.0.0
+      - --port
+      - "${PORT:-${APP_PORT:-8005}}"
+      - --workers
+      - ${WEB_WORKERS:-1}
+      - --timeout
+      - ${WEB_TIMEOUT:-120}
+      - --check
+      - --check-migrations
+    ports:
+      - "${HOST_BIND:-127.0.0.1}:${PORT:-${APP_PORT:-8005}}:${PORT:-${APP_PORT:-8005}}"
+    healthcheck:
+      test: [CMD, uv, run, --no-sync, python, /app/wma/healthcheck.py]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

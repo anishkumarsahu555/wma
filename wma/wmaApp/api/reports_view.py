@@ -1,5 +1,4 @@
 
-from tkinter.constants import E
 from django.db.models.functions import Exp, Coalesce
 from django.http import HttpResponse
 from django.template.loader import render_to_string
