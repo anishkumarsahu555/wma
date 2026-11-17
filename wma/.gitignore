@@ -15,5 +15,6 @@ logs/
 migrations/
 migrations copy/
 .vscode
-./static_cdn
 db.sqlite3
+static_cdn/
+.env

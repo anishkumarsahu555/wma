@@ -17,6 +17,20 @@ from wmaApp.models import *
 from utils.logger import logger
 from django.db.models.functions import Coalesce
 
+MANAGEMENT_GROUPS = ("Owner", "Manager", "Admin")
+
+
+class OptimizedDatatableView(BaseDatatableView):
+    _has_management_access = None
+
+    def has_management_access(self):
+        if self._has_management_access is None:
+            self._has_management_access = self.request.user.groups.filter(
+                name__in=MANAGEMENT_GROUPS
+            ).exists()
+        return self._has_management_access
+
+
 # ---------------------------- staff user api ---------------------------
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -58,9 +72,7 @@ def add_staff_api(request):
             ownerID_id=owner_id,
         )
         username = "USER" + get_random_string(length=6, allowed_chars="1234567890")
-        while (
-            User.objects.select_related().filter(username__exact=username).count() > 0
-        ):
+        while User.objects.filter(username__exact=username).exists():
             username = "USER" + get_random_string(length=6, allowed_chars="1234567890")
         else:
             new_user = User()
@@ -148,7 +160,7 @@ def update_staff_api(request):
         ).to_json_response()
 
 
-class StaffUserListJson(BaseDatatableView):
+class StaffUserListJson(OptimizedDatatableView):
     order_columns = [
         "profile_pic",
         "name",
@@ -163,7 +175,7 @@ class StaffUserListJson(BaseDatatableView):
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return StaffUser.objects.select_related().filter(
+        return StaffUser.objects.select_related("groupID").filter(
             isDeleted__exact=False, ownerID_id=get_owner_id(self.request)
         )
 
@@ -188,11 +200,7 @@ class StaffUserListJson(BaseDatatableView):
             images = '<img class="ui avatar image" src="{}">'.format(
                 item.profile_pic.thumb.url
             )
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -328,12 +336,12 @@ def add_location_api(request):
         ).to_json_response()
 
 
-class LocationListJson(BaseDatatableView):
+class LocationListJson(OptimizedDatatableView):
     order_columns = ["name", "dateCreated"]
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return Location.objects.select_related().filter(
+        return Location.objects.filter(
             isDeleted__exact=False, ownerID_id=get_owner_id(self.request)
         )
 
@@ -347,11 +355,7 @@ class LocationListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -512,12 +516,12 @@ def add_expense_group_api(request):
         ).to_json_response()
 
 
-class ExpenseGroupListJson(BaseDatatableView):
+class ExpenseGroupListJson(OptimizedDatatableView):
     order_columns = ["name", "dateCreated"]
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return ExpenseGroup.objects.select_related().filter(
+        return ExpenseGroup.objects.filter(
             isDeleted__exact=False, ownerID_id=get_owner_id(self.request)
         )
 
@@ -531,11 +535,7 @@ class ExpenseGroupListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -703,9 +703,7 @@ def add_customer_api(request):
         )
         username = "CUS" + get_random_string(length=8, allowed_chars="1234567890")
         password = get_random_string(length=8, allowed_chars="1234567890")
-        while (
-            User.objects.select_related().filter(username__exact=username).count() > 0
-        ):
+        while User.objects.filter(username__exact=username).exists():
             username = "CUS" + get_random_string(length=8, allowed_chars="1234567890")
         else:
             new_user = User()
@@ -716,9 +714,7 @@ def add_customer_api(request):
             obj.userID = new_user
             obj.save()
             customer_count = (
-                Customer.objects.select_related()
-                .filter(ownerID_id=get_owner_id(request))
-                .count()
+                Customer.objects.filter(ownerID_id=owner_id).count()
             )
             obj.customerId = "CID" + str(customer_count).zfill(8)
             obj.save()
@@ -779,7 +775,7 @@ def update_customer_api(request):
         ).to_json_response()
 
 
-class CustomerListJson(BaseDatatableView):
+class CustomerListJson(OptimizedDatatableView):
     order_columns = [
         "profile_pic",
         "customerId",
@@ -797,7 +793,7 @@ class CustomerListJson(BaseDatatableView):
         owner_id = get_owner_id(self.request)
 
         return (
-            Customer.objects.filter(
+            Customer.objects.select_related("locationID", "addedByID").filter(
                 isDeleted=False,
                 ownerID_id=owner_id
             )
@@ -845,11 +841,7 @@ class CustomerListJson(BaseDatatableView):
                 if item.profile_pic
                 else "/static/images/user-icon.png"
             )
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """
                 <a href="/customer_ledger/{}/" data-inverted="" data-tooltip="View Ledger" data-position="left center" data-variation="mini" style="font-size:10px;" class="ui circular facebook icon button pink">
@@ -984,12 +976,12 @@ def add_category_api(request):
         ).to_json_response()
 
 
-class CategoryListJson(BaseDatatableView):
+class CategoryListJson(OptimizedDatatableView):
     order_columns = ["name", "dateCreated"]
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return Category.objects.select_related().filter(
+        return Category.objects.filter(
             isDeleted__exact=False, ownerID_id=get_owner_id(self.request)
         )
 
@@ -1003,11 +995,7 @@ class CategoryListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -1170,12 +1158,12 @@ def add_unit_api(request):
         ).to_json_response()
 
 
-class UnitListJson(BaseDatatableView):
+class UnitListJson(OptimizedDatatableView):
     order_columns = ["name", "dateCreated"]
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return Unit.objects.select_related().filter(
+        return Unit.objects.filter(
             isDeleted__exact=False, ownerID_id=get_owner_id(self.request)
         )
 
@@ -1189,11 +1177,7 @@ class UnitListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -1352,12 +1336,12 @@ def add_hsn_and_tax_api(request):
         ).to_json_response()
 
 
-class HSNTAXListJson(BaseDatatableView):
+class HSNTAXListJson(OptimizedDatatableView):
     order_columns = ["name", "taxRate", "dateCreated"]
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return TaxAndHsn.objects.select_related().filter(
+        return TaxAndHsn.objects.filter(
             isDeleted__exact=False, ownerID_id=get_owner_id(self.request)
         )
 
@@ -1375,11 +1359,7 @@ class HSNTAXListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -1564,7 +1544,7 @@ def add_product_api(request):
         ).to_json_response()
 
 
-class ProductListJson(BaseDatatableView):
+class ProductListJson(OptimizedDatatableView):
     order_columns = [
         "productName",
         "categoryID",
@@ -1579,7 +1559,7 @@ class ProductListJson(BaseDatatableView):
 
     def get_initial_queryset(self):
         # if 'Admin' in self.request.user.groups.values_list('name', flat=True):
-        return Product.objects.select_related().filter(
+        return Product.objects.select_related("categoryID", "unitID", "taxID").filter(
             isDeleted__exact=False, ownerID_id=get_owner_id(self.request)
         )
 
@@ -1603,11 +1583,7 @@ class ProductListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -1950,7 +1926,7 @@ def add_sales_api(request):
         ).to_json_response()
 
 
-class SalesListJson(BaseDatatableView):
+class SalesListJson(OptimizedDatatableView):
     order_columns = [
         "invoiceNumber",
         "saleDate",
@@ -1973,13 +1949,13 @@ class SalesListJson(BaseDatatableView):
             sDate = datetime.strptime(startDateV, "%d/%m/%Y")
             eDate = datetime.strptime(endDateV, "%d/%m/%Y")
             if staffID == "All":
-                return Sales.objects.select_related().filter(
+                return Sales.objects.select_related("customerID__locationID", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     saleDate__range=[sDate.date(), eDate.date()],
                 )
             else:
-                return Sales.objects.select_related().filter(
+                return Sales.objects.select_related("customerID__locationID", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     saleDate__range=[sDate.date(), eDate.date()],
@@ -1987,7 +1963,7 @@ class SalesListJson(BaseDatatableView):
                 )
 
         except:
-            return Sales.objects.select_related().filter(
+            return Sales.objects.select_related("customerID__locationID", "addedByID").filter(
                 isDeleted__exact=False,
                 ownerID_id=owner_id,
                 saleDate__icontains=datetime.today().date(),
@@ -2014,11 +1990,7 @@ class SalesListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """
                 
@@ -2173,7 +2145,7 @@ def add_expense_api(request):
         ).to_json_response()
 
 
-class ExpenseListJson(BaseDatatableView):
+class ExpenseListJson(OptimizedDatatableView):
     order_columns = [
         "groupID",
         "expenseAmount",
@@ -2193,13 +2165,13 @@ class ExpenseListJson(BaseDatatableView):
             sDate = datetime.strptime(startDateV, "%d/%m/%Y")
             eDate = datetime.strptime(endDateV, "%d/%m/%Y")
             if staffID == "All":
-                return Expense.objects.select_related().filter(
+                return Expense.objects.select_related("groupID", "staffID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     expenseDate__range=[sDate.date(), eDate.date()],
                 )
             else:
-                return Expense.objects.select_related().filter(
+                return Expense.objects.select_related("groupID", "staffID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     expenseDate_range=[sDate.date(), eDate.date()],
@@ -2207,7 +2179,7 @@ class ExpenseListJson(BaseDatatableView):
                 )
 
         except:
-            return Expense.objects.select_related().filter(
+            return Expense.objects.select_related("groupID", "staffID").filter(
                 isDeleted__exact=False,
                 ownerID_id=owner_id,
                 expenseDate__icontains=datetime.today().date(),
@@ -2230,11 +2202,7 @@ class ExpenseListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -2386,7 +2354,7 @@ def add_jar_api(request):
         ).to_json_response()
 
 
-class JarListJson(BaseDatatableView):
+class JarListJson(OptimizedDatatableView):
     order_columns = [
         "customerID",
         "inJar",
@@ -2407,13 +2375,13 @@ class JarListJson(BaseDatatableView):
             sDate = datetime.strptime(startDateV, "%d/%m/%Y")
             eDate = datetime.strptime(endDateV, "%d/%m/%Y")
             if staffID == "All":
-                return JarCounter.objects.select_related().filter(
+                return JarCounter.objects.select_related("customerID__locationID", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     date__range=[sDate.date(), eDate.date()],
                 )
             else:
-                return JarCounter.objects.select_related().filter(
+                return JarCounter.objects.select_related("customerID__locationID", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     date__range=[sDate.date(), eDate.date()],
@@ -2421,7 +2389,7 @@ class JarListJson(BaseDatatableView):
                 )
 
         except:
-            return JarCounter.objects.select_related().filter(
+            return JarCounter.objects.select_related("customerID__locationID", "addedByID").filter(
                 isDeleted__exact=False,
                 ownerID_id=owner_id,
                 date__icontains=datetime.today().date(),
@@ -2446,11 +2414,7 @@ class JarListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -2609,7 +2573,7 @@ def add_payment_api(request):
         ).to_json_response()
 
 
-class PaymentListJson(BaseDatatableView):
+class PaymentListJson(OptimizedDatatableView):
     order_columns = [
         "customerID",
         "paymentAmount",
@@ -2631,13 +2595,13 @@ class PaymentListJson(BaseDatatableView):
             sDate = datetime.strptime(startDateV, "%d/%m/%Y")
             eDate = datetime.strptime(endDateV, "%d/%m/%Y")
             if staffID == "All":
-                return Payment.objects.select_related().filter(
+                return Payment.objects.select_related("customerID__locationID", "approvedBy", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     paymentDate__range=[sDate.date(), eDate.date()],
                 )
             else:
-                return Payment.objects.select_related().filter(
+                return Payment.objects.select_related("customerID__locationID", "approvedBy", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     paymentDate_range=[sDate.date(), eDate.date()],
@@ -2645,7 +2609,7 @@ class PaymentListJson(BaseDatatableView):
                 )
 
         except:
-            return Payment.objects.select_related().filter(
+            return Payment.objects.select_related("customerID__locationID", "approvedBy", "addedByID").filter(
                 isDeleted__exact=False,
                 ownerID_id=owner_id,
                 paymentDate__icontains=datetime.today().date(),
@@ -2668,11 +2632,7 @@ class PaymentListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -2804,7 +2764,7 @@ def update_payment_api(request):
 # Customer ledger
 
 
-class CustomerLedgerListJson(BaseDatatableView):
+class CustomerLedgerListJson(OptimizedDatatableView):
     order_columns = [
         "addedDate",
         "isCredit",
@@ -2824,13 +2784,13 @@ class CustomerLedgerListJson(BaseDatatableView):
 
         # Base queryset with customer filter if provided
         if customer_id:
-            qs = CustomerLedger.objects.select_related().filter(
+            qs = CustomerLedger.objects.select_related("addedByID").filter(
                 isDeleted__exact=False,
                 ownerID_id=owner_id,
                 customerID_id=int(customer_id),
             )
         else:
-            qs = CustomerLedger.objects.select_related().filter(
+            qs = CustomerLedger.objects.select_related("addedByID").filter(
                 isDeleted__exact=False, ownerID_id=owner_id
             )
 
@@ -2903,7 +2863,7 @@ class CustomerLedgerListJson(BaseDatatableView):
 # booking api urls
 
 
-class BookingListJson(BaseDatatableView):
+class BookingListJson(OptimizedDatatableView):
     order_columns = [
         "invoiceNumber",
         "expectedDeliveryDate",
@@ -2926,13 +2886,13 @@ class BookingListJson(BaseDatatableView):
             sDate = datetime.strptime(startDateV, "%d/%m/%Y")
             eDate = datetime.strptime(endDateV, "%d/%m/%Y")
             if staffID == "All":
-                return AdvanceOrder.objects.select_related().filter(
+                return AdvanceOrder.objects.select_related("customerID__locationID", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     expectedDeliveryDate__range=[sDate.date(), eDate.date()],
                 )
             else:
-                return AdvanceOrder.objects.select_related().filter(
+                return AdvanceOrder.objects.select_related("customerID__locationID", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     expectedDeliveryDate__range=[sDate.date(), eDate.date()],
@@ -2940,7 +2900,7 @@ class BookingListJson(BaseDatatableView):
                 )
 
         except:
-            return AdvanceOrder.objects.select_related().filter(
+            return AdvanceOrder.objects.select_related("customerID__locationID", "addedByID").filter(
                 isDeleted__exact=False,
                 ownerID_id=owner_id,
                 expectedDeliveryDate__icontains=datetime.today().date(),
@@ -2967,11 +2927,7 @@ class BookingListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """
                 
@@ -3133,7 +3089,7 @@ def add_jar_allocation_api(request):
         ).to_json_response()
 
 
-class JarAllocationListJson(BaseDatatableView):
+class JarAllocationListJson(OptimizedDatatableView):
     order_columns = [
         "driverID",
         "inJar",
@@ -3154,13 +3110,13 @@ class JarAllocationListJson(BaseDatatableView):
             sDate = datetime.strptime(startDateV, "%d/%m/%Y")
             eDate = datetime.strptime(endDateV, "%d/%m/%Y")
             if staffID == "All":
-                return JarAllocation.objects.select_related().filter(
+                return JarAllocation.objects.select_related("driverID", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     date__range=[sDate.date(), eDate.date()],
                 )
             else:
-                return JarAllocation.objects.select_related().filter(
+                return JarAllocation.objects.select_related("driverID", "addedByID").filter(
                     isDeleted__exact=False,
                     ownerID_id=owner_id,
                     date__range=[sDate.date(), eDate.date()],
@@ -3168,7 +3124,7 @@ class JarAllocationListJson(BaseDatatableView):
                 )
 
         except:
-            return JarAllocation.objects.select_related().filter(
+            return JarAllocation.objects.select_related("driverID", "addedByID").filter(
                 isDeleted__exact=False,
                 ownerID_id=owner_id,
                 date__icontains=datetime.today().date(),
@@ -3193,11 +3149,7 @@ class JarAllocationListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -3329,7 +3281,7 @@ def update_jar_allocation_api(request):
         ).to_json_response()
 
 
-class DriverWiseJarAllocationListJson(BaseDatatableView):
+class DriverWiseJarAllocationListJson(OptimizedDatatableView):
     order_columns = [
         "driverID",
         "inJar",
@@ -3348,7 +3300,7 @@ class DriverWiseJarAllocationListJson(BaseDatatableView):
             endDateV = self.request.GET.get("endDate")
             sDate = datetime.strptime(startDateV, "%d/%m/%Y")
             eDate = datetime.strptime(endDateV, "%d/%m/%Y")
-            return JarAllocation.objects.select_related().filter(
+            return JarAllocation.objects.select_related("driverID", "addedByID").filter(
                 isDeleted__exact=False,
                 ownerID_id=owner_id,
                 date__range=[sDate.date(), eDate.date()],
@@ -3357,7 +3309,7 @@ class DriverWiseJarAllocationListJson(BaseDatatableView):
                 ).id,
             )
         except:
-            return JarAllocation.objects.select_related().filter(
+            return JarAllocation.objects.select_related("driverID", "addedByID").filter(
                 isDeleted__exact=False,
                 ownerID_id=owner_id,
                 date=datetime.now().date(),
@@ -3385,11 +3337,7 @@ class DriverWiseJarAllocationListJson(BaseDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            if (
-                "Owner" in self.request.user.groups.values_list("name", flat=True)
-                or "Manager" in self.request.user.groups.values_list("name", flat=True)
-                or "Admin" in self.request.user.groups.values_list("name", flat=True)
-            ):
+            if self.has_management_access():
                 action = (
                     """<button data-inverted="" data-tooltip="Edit Detail" data-position="left center" data-variation="mini" style="font-size:10px;" onclick = "GetUserDetails('{}')" class="ui circular facebook icon button green">
                     <i class="pen icon"></i>
@@ -3489,9 +3437,7 @@ def upload_customer_csv_api(request):
                     addedDate=datetime.now(),
                 )
                 customer_count = (
-                    Customer.objects.select_related()
-                    .filter(ownerID_id=get_owner_id(request))
-                    .count()
+                    Customer.objects.filter(ownerID_id=owner_id).count()
                 )
                 c_obj.customerId = "CID" + str(customer_count).zfill(8)
                 c_obj.save()

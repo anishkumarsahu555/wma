@@ -39,11 +39,11 @@ def download_report_pdf(request):
 def generate_sales_report_pdf(request, startDate, endDate, location, owner_id):
     logger.info("Generating sales report pdf for owner_id: %s", owner_id)
     if location == 'All':
-        col = Sales.objects.select_related().filter(saleDate__range=(
+        col = Sales.objects.select_related("customerID__locationID", "addedByID").filter(saleDate__range=(
             startDate.date(), endDate.date() + timedelta(days=1)),
             isDeleted__exact=False, ownerID_id=owner_id).order_by('addedByID__name')
     else:
-        col = Sales.objects.select_related().filter(saleDate__range=(
+        col = Sales.objects.select_related("customerID__locationID", "addedByID").filter(saleDate__range=(
             startDate.date(), endDate.date() + timedelta(days=1)),
             isDeleted__exact=False, customerID__locationID_id=int(location), ownerID_id=owner_id).order_by('addedByID__name')
     total = col.aggregate(Sum('totalAmountAfterTax'))
@@ -66,17 +66,16 @@ def generate_sales_report_pdf(request, startDate, endDate, location, owner_id):
 def generate_jar_report_pdf(request, startDate, endDate, location, owner_id):
     logger.info("Generating jar report pdf for owner_id: %s", owner_id)
     if location == 'All':
-        col = JarCounter.objects.select_related().filter(date__range=(
+        col = JarCounter.objects.select_related("customerID__locationID", "addedByID").filter(date__range=(
             startDate.date(), endDate.date() + timedelta(days=1)),
             isDeleted__exact=False, ownerID_id=owner_id).order_by('addedByID__name')
     else:
-        col = JarCounter.objects.select_related().filter(date__range=(
+        col = JarCounter.objects.select_related("customerID__locationID", "addedByID").filter(date__range=(
             startDate.date(), endDate.date() + timedelta(days=1)),
             isDeleted__exact=False, customerID__locationID_id=int(location), ownerID_id=owner_id).order_by('addedByID__name')
-    in_total = col.aggregate(Sum('inJar'))
-    inJar = in_total['inJar__sum'] or 0
-    out_total = col.aggregate(Sum('outJar'))
-    outJar = out_total['outJar__sum'] or 0
+    totals = col.aggregate(inJar=Sum('inJar'), outJar=Sum('outJar'))
+    inJar = totals['inJar'] or 0
+    outJar = totals['outJar'] or 0
     context = {
         'startDate': startDate,
         'endDate': endDate,
@@ -96,11 +95,11 @@ def generate_jar_report_pdf(request, startDate, endDate, location, owner_id):
 def generate_expense_report_pdf(request, startDate, endDate, location, owner_id):
     logger.info("Generating expense report pdf for owner_id: %s", owner_id)
     if location == 'All':
-        col = Expense.objects.select_related().filter(expenseDate__range=(
+        col = Expense.objects.select_related("groupID", "staffID").filter(expenseDate__range=(
             startDate.date(), endDate.date() + timedelta(days=1)),
             isDeleted__exact=False, ownerID_id=owner_id).order_by('-id')
     else:
-        col = Expense.objects.select_related().filter(expenseDate__range=(
+        col = Expense.objects.select_related("groupID", "staffID").filter(expenseDate__range=(
             startDate.date(), endDate.date() + timedelta(days=1)),
             isDeleted__exact=False, staffID__locationID_id=int(location), ownerID_id=owner_id).order_by('-id')
     total = col.aggregate(Sum('expenseAmount'))
@@ -125,11 +124,11 @@ def generate_expense_report_pdf(request, startDate, endDate, location, owner_id)
 def generate_collection_report_pdf(request, startDate, endDate, location, owner_id):
     logger.info("Generating collection report pdf for owner_id: %s", owner_id)
     if location == 'All':
-        col = Payment.objects.select_related().filter(paymentDate__range=(
+        col = Payment.objects.select_related("customerID__locationID", "addedByID", "approvedBy").filter(paymentDate__range=(
             startDate.date(), endDate.date() + timedelta(days=1)),
             isDeleted__exact=False, ownerID_id=owner_id).order_by('-id')
     else:
-        col = Payment.objects.select_related().filter(paymentDate__range=(
+        col = Payment.objects.select_related("customerID__locationID", "addedByID", "approvedBy").filter(paymentDate__range=(
             startDate.date(), endDate.date() + timedelta(days=1)),
             isDeleted__exact=False, customerID__locationID_id=int(location), ownerID_id=owner_id).order_by('-id')
     total = col.aggregate(Sum('paymentAmount'))
@@ -229,12 +228,14 @@ def get_daywise_customer_summary(request, report_date, owner_id, location):
             'location': 'All' if location == 'All' else Location.objects.get(id=location, ownerID_id=owner_id).name,
 
         }
-        sales_total = qs.aggregate(Sum('sales_amount'))
-        context['sales_total'] = sales_total['sales_amount__sum'] or 0
-        payment_total = qs.aggregate(Sum('payment_amount'))
-        context['payment_total'] = payment_total['payment_amount__sum'] or 0
-        due_total = qs.aggregate(Sum('due_amount'))
-        context['due_total'] = due_total['due_amount__sum'] or 0
+        totals = qs.aggregate(
+            sales_total=Sum('sales_amount'),
+            payment_total=Sum('payment_amount'),
+            due_total=Sum('due_amount'),
+        )
+        context['sales_total'] = totals['sales_total'] or 0
+        context['payment_total'] = totals['payment_total'] or 0
+        context['due_total'] = totals['due_total'] or 0
 
         response = HttpResponse(content_type="application/pdf")
         response['Content-Disposition'] = "report.pdf"
