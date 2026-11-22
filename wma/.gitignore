@@ -12,8 +12,7 @@ wheels/
 logs/
 .DS_Store
 ./media_cdn
-migrations/
-migrations copy/
 .vscode
-./static_cdn
 db.sqlite3
+static_cdn/
+.env

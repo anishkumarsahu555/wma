@@ -59,6 +59,12 @@ class StaffUser(models.Model):
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "isDeleted"], name="wmaApp_staf_ownerID_9c8fa3_idx"),
+            models.Index(fields=["ownerID", "groupID", "isDeleted"], name="wmaApp_staf_ownerID_ff2870_idx"),
+        ]
+
     def __str__(self):
         return self.name
 
@@ -83,6 +89,12 @@ class Expense(models.Model):
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "isDeleted", "expenseDate"], name="wmaApp_expe_ownerID_051c71_idx"),
+            models.Index(fields=["ownerID", "staffID", "isDeleted"], name="wmaApp_expe_ownerID_1cd434_idx"),
+        ]
+
     def __str__(self):
         return self.expenseDescription
 
@@ -106,6 +118,13 @@ class Customer(models.Model):
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "isDeleted"], name="wmaApp_cust_ownerID_2c7de7_idx"),
+            models.Index(fields=["ownerID", "locationID", "isDeleted"], name="wmaApp_cust_ownerID_cf2fd6_idx"),
+            models.Index(fields=["ownerID", "customerId"], name="wmaApp_cust_ownerID_9f21bf_idx"),
+        ]
+
     def __str__(self):
         return self.name
 
@@ -123,6 +142,12 @@ class CustomerLedger(models.Model):
     addedDate = models.DateField(blank=True, null=True)
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "customerID", "isDeleted"], name="wmaApp_cust_ownerID_51d841_idx"),
+            models.Index(fields=["ownerID", "addedDate", "isDeleted"], name="wmaApp_cust_ownerID_5f0d11_idx"),
+        ]
 
     def __str__(self):
         return self.ownerID.name
@@ -171,6 +196,13 @@ class Product(models.Model):
     draft = models.BooleanField(default=False)
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "isDeleted"], name="wmaApp_prod_ownerID_753ea0_idx"),
+            models.Index(fields=["ownerID", "categoryID", "isDeleted"], name="wmaApp_prod_ownerID_1e0cae_idx"),
+            models.Index(fields=["ownerID", "productName", "isDeleted"], name="wmaApp_prod_ownerID_3ba9c6_idx"),
+        ]
 
     def __str__(self):
         return self.productName
@@ -251,6 +283,13 @@ class Sales(models.Model):
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "isDeleted", "saleDate"], name="wmaApp_sale_ownerID_f74cb4_idx"),
+            models.Index(fields=["ownerID", "addedByID", "isDeleted"], name="wmaApp_sale_ownerID_93f6dd_idx"),
+            models.Index(fields=["ownerID", "customerID", "isDeleted"], name="wmaApp_sale_ownerID_ed8360_idx"),
+        ]
+
     def __str__(self):
         return self.customerID.name
 
@@ -288,6 +327,13 @@ class Payment(models.Model):
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "isDeleted", "paymentDate"], name="wmaApp_paym_ownerID_1f29d1_idx"),
+            models.Index(fields=["ownerID", "addedByID", "isDeleted"], name="wmaApp_paym_ownerID_1a010e_idx"),
+            models.Index(fields=["ownerID", "customerID", "isDeleted"], name="wmaApp_paym_ownerID_f92577_idx"),
+        ]
+
     def __str__(self):
         return self.customerID.name
 
@@ -307,6 +353,13 @@ class AdvanceOrder(models.Model):
     isDelivered = models.BooleanField(default=False)
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "isDeleted", "orderDate"], name="wmaApp_adva_ownerID_d786d3_idx"),
+            models.Index(fields=["ownerID", "addedByID", "isDeleted"], name="wmaApp_adva_ownerID_9d8f0a_idx"),
+            models.Index(fields=["ownerID", "customerID", "isDeleted"], name="wmaApp_adva_ownerID_7adefa_idx"),
+        ]
 
     def __str__(self):
         return self.customerID.name
@@ -343,6 +396,13 @@ class JarCounter(models.Model):
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "isDeleted", "date"], name="wmaApp_jarc_ownerID_c811b2_idx"),
+            models.Index(fields=["ownerID", "addedByID", "isDeleted"], name="wmaApp_jarc_ownerID_6d0746_idx"),
+            models.Index(fields=["ownerID", "customerID", "isDeleted"], name="wmaApp_jarc_ownerID_6bf564_idx"),
+        ]
+
     def __str__(self):
         return self.customerID.name
 
@@ -357,6 +417,13 @@ class JarAllocation(models.Model):
     isDeleted = models.BooleanField(default=False)
     dateCreated = models.DateTimeField(auto_now_add=True, auto_now=False)
     lastUpdatedOn = models.DateTimeField(auto_now_add=False, auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ownerID", "isDeleted", "date"], name="wmaApp_jara_ownerID_de0291_idx"),
+            models.Index(fields=["ownerID", "driverID", "isDeleted"], name="wmaApp_jara_ownerID_9ee2e7_idx"),
+            models.Index(fields=["ownerID", "addedByID", "isDeleted"], name="wmaApp_jara_ownerID_5d7eb5_idx"),
+        ]
 
     def __str__(self):
         return self.driverID.name

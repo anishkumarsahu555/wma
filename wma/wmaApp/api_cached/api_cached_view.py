@@ -9,12 +9,13 @@ def customer_list_api_cached(request):
     ownerid = get_owner_id(request)
     try:
         o_list = []
-        if cache.get(f'CustomerList{ownerid}'):
-            o_list = cache.get(f'CustomerList{ownerid}')
+        cached_customers = cache.get(f'CustomerList{ownerid}')
+        if cached_customers:
+            o_list = cached_customers
             logger.info("Customer list fetched from cache")
 
         else:
-            obj_list = Customer.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(request)).order_by(
+            obj_list = Customer.objects.select_related("locationID").filter(isDeleted__exact=False, ownerID_id=ownerid).order_by(
                 'name')
 
             for obj in obj_list:
@@ -38,12 +39,13 @@ def product_list_api_cached(request):
     ownerid = get_owner_id(request)
     try:
         o_list = []
-        if cache.get(f'ProductList{ownerid}'):
-            o_list = cache.get(f'ProductList{ownerid}')
+        cached_products = cache.get(f'ProductList{ownerid}')
+        if cached_products:
+            o_list = cached_products
             logger.info("Product list fetched from cache")
 
         else:
-            obj_list = Product.objects.select_related().filter(isDeleted__exact=False, ownerID_id=get_owner_id(request)).order_by(
+            obj_list = Product.objects.select_related("unitID", "categoryID", "taxID").filter(isDeleted__exact=False, ownerID_id=ownerid).order_by(
                 'productName')
 
             for obj in obj_list:

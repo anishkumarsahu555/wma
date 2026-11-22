@@ -15,17 +15,17 @@ from django.conf.global_settings import DATABASES
 from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv()
+load_dotenv(os.environ.get("ENV_FILE") or None)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-3^5f+v584v+)jpv%pye*e6m$)+uoiv5u$hyq()^%lk9h^a7hcb'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-local-development-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'true').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = ["wmapp.in","www.wmapp.in", "*"]
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'wmapp.in,www.wmapp.in,*').split(',') if h.strip()]
 
 
 # Application definition
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -77,30 +78,21 @@ WSGI_APPLICATION = 'wma.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-if os.environ.get("USE_MYSQL", "false") == "true":
-    # Mysql
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'wma',
-        'HOST': os.environ.get("DB_HOST", "127.0.0.1"),
-        'PORT': '3306',
-        'USER': 'root',
-        'PASSWORD': os.environ.get("DB_PASSWORD", "password"),
-        'OPTIONS': {
-            "init_command": "SET foreign_key_checks = 0;",
-            'charset': 'utf8mb4',
-        },
-    }
-}
+db_engine = os.environ.get('DATABASE_ENGINE') or os.environ.get('DB_ENGINE') or ('mysql' if os.environ.get('USE_MYSQL', 'false').lower() == 'true' else 'sqlite3')
+if db_engine == 'mysql':
+    DATABASES = {'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', 'wma'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
+        'OPTIONS': {'init_command': 'SET foreign_key_checks = 0;', 'charset': 'utf8mb4'},
+    }}
+elif db_engine == 'sqlite3':
+    DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': os.environ.get('DB_NAME', str(BASE_DIR / 'db.sqlite3'))}}
 else:
-    # sqlite3
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    raise ValueError('DB_ENGINE must be sqlite3 or mysql')
 
 
 # Password validation
@@ -139,7 +131,7 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = os.environ.get('STATIC_URL', '/static/')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -150,10 +142,10 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static_cdn")
+STATIC_ROOT = os.environ.get("STATIC_ROOT", os.path.join(os.path.dirname(BASE_DIR), "static_cdn"))
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), "media_cdn")
+MEDIA_URL = os.environ.get('MEDIA_URL', '/media/')
+MEDIA_ROOT = os.environ.get("MEDIA_ROOT", os.path.join(os.path.dirname(BASE_DIR), "media_cdn"))
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
@@ -191,7 +183,7 @@ PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'wmaApp', '../static/sw/service
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -210,3 +202,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://www.wmapp.in",
 ]
 
+
+CSRF_TRUSTED_ORIGINS = [v.strip() for v in os.environ.get('CSRF_TRUSTED_ORIGINS', ','.join(CSRF_TRUSTED_ORIGINS)).split(',') if v.strip()]
+
+# Match the media authentication accepted by the reference deployment.
+SIMPLE_JWT = {'AUTH_HEADER_TYPES': ('JWT', 'Bearer')}

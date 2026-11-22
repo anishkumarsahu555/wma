@@ -1,0 +1,86 @@
+:root {
+  --primary: #0f766e;
+  --secondary: #134e4a;
+  --accent: #f59e0b;
+  --link-fg: #0f766e;
+  --link-hover-color: #115e59;
+  --button-bg: #0f766e;
+  --button-hover-bg: #115e59;
+  --button-fg: #ffffff;
+  --default-button-bg: #f59e0b;
+  --default-button-hover-bg: #d97706;
+}
+
+#header {
+  background: linear-gradient(90deg, #134e4a 0%, #0f766e 100%);
+  color: #ffffff;
+}
+
+#header a:link,
+#header a:visited {
+  color: #ffffff;
+}
+
+.wma-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wma-brand__title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.wma-brand__subtitle {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+div.breadcrumbs {
+  background: #0f766e;
+}
+
+#content {
+  padding-top: 18px;
+}
+
+.module h2,
+.module caption,
+.inline-group h2 {
+  background: #ecfeff;
+  color: #134e4a;
+  border-bottom: 1px solid #ccfbf1;
+}
+
+#changelist table thead th {
+  background: #f0fdfa;
+}
+
+#changelist table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.button,
+input[type="submit"],
+input[type="button"],
+.submit-row input,
+a.button {
+  border-radius: 8px;
+}
+
+.selector .selector-filter {
+  border-radius: 8px;
+}
+
+@media (max-width: 767px) {
+  #header {
+    padding: 10px 12px;
+  }
+
+  .wma-brand__title {
+    font-size: 16px;
+  }
+}
+

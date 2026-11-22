@@ -680,6 +680,7 @@
 
     function GetUserDetails(id) {
         myOwnReset();
+        $('#imageUploadEdit').val('');
         $('#userModal').modal('show');
         // var formdata = new FormData();
         // formdata.append('id', id);
@@ -698,7 +699,8 @@
                 $('#UserAddressEdit').val(response.data['address']);
                 $('#UserGroupEdit').val(response.data['group']).change();
                 $('#UserStatusEdit').val(response.data['isActive']).change();
-                $('#cImgEdit').css('background-image', 'url(' + response.data['profile_pic'] + ')');
+                var profilePic = response.data['profile_pic'];
+                $('#cImgEdit').css('background-image', profilePic ? 'url(' + profilePic + ')' : '');
                 $('#UserPwdEdit').val(response.data['password']);
                 $('#ConfirmPwdEdit').val(response.data['password']);
 
@@ -717,6 +719,7 @@
 
     function editUser() {
         showLoading();
+        var profilePic = document.getElementById("imageUploadEdit").files[0];
         var EditUserId = $('#EditUserId').val();
         var CompanyUserName = $('#CompanyUserNameEdit').val();
         var UserPhoneNo = $('#UserPhoneNoEdit').val();
@@ -733,7 +736,7 @@
             $('body')
                 .toast({
                     class: 'orange',
-                    message: 'User Name, Phone Number, Photo, Address ... are required !. Also ensure that password is matched'
+                    message: 'Enter a name, phone number, address, group, status, and matching passwords.'
                 })
             ;
             hideLoading();
@@ -743,6 +746,9 @@
 
             data = new FormData();
             data.append('id', EditUserId);
+            if (profilePic) {
+                data.append('profile_pic', profilePic);
+            }
             data.append('name', CompanyUserName);
             data.append('phone', UserPhoneNo);
             data.append('email', UserEmail);
@@ -800,11 +806,11 @@
 
                         return response;
                     },
-                    error: function () {
+                    error: function (xhr) {
                         $('body')
                             .toast({
                                 class: 'error',
-                                message: 'An error occurred !'
+                                message: xhr.responseJSON?.message || 'Unable to update staff.'
                             })
                         ;
                         hideLoading();
