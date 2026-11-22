@@ -1,7 +1,9 @@
 from datetime import datetime
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q, Sum, Count, Avg, F, Value
 from django.core.cache import cache
+from django.forms import ImageField
 from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -106,7 +108,6 @@ def add_staff_api(request):
         ).to_json_response()
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 @validate_input(
     ["id", "name", "email", "password", "address", "phone", "group", "is_active"]
@@ -114,17 +115,24 @@ def add_staff_api(request):
 @transaction.atomic
 def update_staff_api(request):
     data = request.POST.dict()
+    owner_id = get_owner_id(request)
+    if owner_id is None or not request.user.groups.filter(name__in=MANAGEMENT_GROUPS).exists():
+        return ErrorResponse("Permission denied", status_code=403).to_json_response()
+
     try:
+        profile_pic = ImageField(required=False).clean(request.FILES.get("profile_pic"))
         # Get the UserGroup instance
         try:
-            user_group = UserGroup.objects.get(name=data["group"], isDeleted=False)
+            user_group = UserGroup.objects.get(
+                name=data["group"], isDeleted=False, ownerID_id=owner_id
+            )
         except UserGroup.DoesNotExist:
             logger.error(f"UserGroup '{data['group']}' does not exist")
             return ErrorResponse(
                 f"UserGroup '{data['group']}' does not exist"
             ).to_json_response()
         try:
-            staff = StaffUser.objects.get(pk=data["id"], isDeleted=False)
+            staff = StaffUser.objects.get(pk=data["id"], isDeleted=False, ownerID_id=owner_id)
             staff.name = data["name"]
             staff.email = data.get("email", "")
             staff.groupID = user_group
@@ -132,7 +140,14 @@ def update_staff_api(request):
             staff.isActive = data.get("is_active", "active").lower() == "active"
             staff.password = data["password"]
             staff.phone = data["phone"]
-            staff.save()
+            updated_fields = [
+                "name", "email", "groupID", "address", "isActive", "password",
+                "phone", "lastUpdatedOn",
+            ]
+            if profile_pic:
+                staff.profile_pic = profile_pic
+                updated_fields.append("profile_pic")
+            staff.save(update_fields=updated_fields)
 
             new_user = User.objects.get(id=staff.userID.pk)
             new_user.set_password(data["password"])
@@ -153,7 +168,10 @@ def update_staff_api(request):
         except StaffUser.DoesNotExist:
             logger.error(f"Staff user with ID '{data['id']}' not found")
             return ErrorResponse("Staff user does not exist").to_json_response()
+    except ValidationError as e:
+        return ErrorResponse(e.messages[0]).to_json_response()
     except Exception as e:
+        transaction.set_rollback(True)
         logger.error(f"Error while updating staff user: {e}")
         return ErrorResponse(
             "Unable to update staff. Please try again"
@@ -197,8 +215,10 @@ class StaffUserListJson(OptimizedDatatableView):
     def prepare_results(self, qs):
         json_data = []
         for item in qs:
-            images = '<img class="ui avatar image" src="{}">'.format(
-                item.profile_pic.thumb.url
+            images = (
+                '<img class="ui avatar image" src="{}">'.format(item.profile_pic.thumb.url)
+                if item.profile_pic
+                else ""
             )
             if self.has_management_access():
                 action = (
@@ -255,7 +275,7 @@ def get_staff_detail(request):
                 "phone": staff.phone,
                 "address": staff.address,
                 "isActive": "Active" if staff.isActive else "In-Active",
-                "profile_pic": staff.profile_pic.url,
+                "profile_pic": staff.profile_pic.url if staff.profile_pic else None,
             }
             logger.info("Staff user fetched successfully")
             return SuccessResponse(
@@ -732,14 +752,19 @@ def add_customer_api(request):
         ).to_json_response()
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 @validate_input(["id", "name", "location", "address", "phone"])
 @transaction.atomic
 def update_customer_api(request):
     data = request.POST.dict()
+    owner_id = get_owner_id(request)
+    if owner_id is None or not request.user.groups.filter(
+        name__in=(*MANAGEMENT_GROUPS, "Driver")
+    ).exists():
+        return ErrorResponse("Permission denied", status_code=403).to_json_response()
+
     try:
-        owner_id = get_owner_id(request)
+        profile_pic = ImageField(required=False).clean(request.FILES.get("profile_pic"))
         # Get the Location instance
         try:
             loc = Location.objects.get(
@@ -750,7 +775,7 @@ def update_customer_api(request):
             return ErrorResponse(f"Location does not exist").to_json_response()
         try:
             obj = Customer.objects.get(
-                pk=data["id"], isDeleted=False, ownerID_id=get_owner_id(request)
+                pk=data["id"], isDeleted=False, ownerID_id=owner_id
             )
 
             obj.name = data["name"]
@@ -758,7 +783,11 @@ def update_customer_api(request):
             obj.locationID = loc
             obj.address = data.get("address", "")
             obj.phone = data["phone"]
-            obj.save()
+            updated_fields = ["name", "email", "locationID", "address", "phone", "lastUpdatedOn"]
+            if profile_pic:
+                obj.profile_pic = profile_pic
+                updated_fields.append("profile_pic")
+            obj.save(update_fields=updated_fields)
             cache.delete(f"CustomerList{owner_id}")
 
             logger.info("Customer user updated successfully")
@@ -768,7 +797,10 @@ def update_customer_api(request):
         except Customer.DoesNotExist:
             logger.error(f"Customer user with ID '{data['id']}' not found")
             return ErrorResponse("Customer user does not exist").to_json_response()
+    except ValidationError as e:
+        return ErrorResponse(e.messages[0]).to_json_response()
     except Exception as e:
+        transaction.set_rollback(True)
         logger.error(f"Error while updating Customer user: {e}")
         return ErrorResponse(
             "Unable to update Customer. Please try again"

@@ -593,6 +593,7 @@
 
     function GetUserDetails(id) {
         myOwnReset();
+        $('#imageUploadEdit').val('');
         $('#userModal').modal('show');
         // var formdata = new FormData();
         // formdata.append('id', id);
@@ -610,7 +611,8 @@
                 $('#UserEmailEdit').val(response.data['email']);
                 $('#UserAddressEdit').val(response.data['address']);
                 $('#UserGroupEdit').val(response.data['location']).change();
-                $('#cImgEdit').css('background-image', 'url(' + response.data['profile_pic'] + ')');
+                var profilePic = response.data['profile_pic'];
+                $('#cImgEdit').css('background-image', profilePic ? 'url(' + profilePic + ')' : '');
 
 
             },
@@ -627,6 +629,7 @@
 
     function editUser() {
         showLoading();
+        var profilePic = document.getElementById("imageUploadEdit").files[0];
         var EditUserId = $('#EditUserId').val();
         var CompanyUserName = $('#CompanyUserNameEdit').val();
         var UserPhoneNo = $('#UserPhoneNoEdit').val();
@@ -652,6 +655,9 @@
 
             data = new FormData();
             data.append('id', EditUserId);
+            if (profilePic) {
+                data.append('profile_pic', profilePic);
+            }
             data.append('name', CompanyUserName);
             data.append('phone', UserPhoneNo);
             data.append('email', UserEmail);
@@ -696,11 +702,11 @@
 
                         return response;
                     },
-                    error: function () {
+                    error: function (xhr) {
                         $('body')
                             .toast({
                                 class: 'error',
-                                message: 'An error occurred !'
+                                message: xhr.responseJSON?.message || 'Unable to update customer.'
                             })
                         ;
                         hideLoading();
